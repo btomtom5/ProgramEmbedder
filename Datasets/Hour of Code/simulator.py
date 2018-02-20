@@ -2,15 +2,13 @@ import json
 import glob
 import sys
 
-from world import World, Orientation
+from world import World
 from writer import generate_condition, write_hoare_triple
-from game import Game
+from game import Game, Orientation
 
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
-
-debug_mode = False
 
 ################################## GENERATE THE TWO WORLD INSTANCES #############################
 def create_small_world():
@@ -86,12 +84,12 @@ def process_datasets():
 	for program_path in hoc4_paths:
 		ast = json.load(open(program_path))
 		small_game = create_small_game(ast)
-		precond = generate_condition(*small_game.extract_state)
+		precond = generate_condition(*small_game.extract_state())
 		small_game.run()
 		total_games += 1
 		total_successful += 1 if small_game.successful else 0
-		post_cond = generate_condition(*small_game.extract_state)
-		write_hoare_triple(ast, precond, post_cond, hoare_path + "hoc4/" + dataset_count + ".json")
+		post_cond = generate_condition(*small_game.extract_state())
+		write_hoare_triple(ast, precond, post_cond, hoare_path + "hoc4/" + str(dataset_count) + ".json")
 		dataset_count +=1
 
 
@@ -115,12 +113,12 @@ def process_datasets():
 	for program_path in hoc18_paths:
 		ast = json.load(open(program_path))
 		large_game = create_large_game(ast)
-		precond = generate_condition(*large_game.extract_state)
+		precond = generate_condition(*large_game.extract_state())
 		large_game.run()
 		total_games += 1
 		total_successful += 1 if large_game.successful else 0
-		post_cond = generate_condition(*large_game.extract_state)
-		write_hoare_triple(ast, precond, post_cond, hoare_path + "hoc18/" + dataset_count + ".json")
+		post_cond = generate_condition(*large_game.extract_state())
+		write_hoare_triple(ast, precond, post_cond, hoare_path + "hoc18/" + str(dataset_count) + ".json")
 		dataset_count += 1
 
 	print("============Running the large games=============")

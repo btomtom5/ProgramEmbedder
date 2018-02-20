@@ -2,22 +2,23 @@ import json
 
 
 def write_hoare_triple(ast, precond, postcond, filepath):
+	data = {}
 	data["ast"] = ast
 	data["precond"] = precond
 	data["postcond"] = postcond
-	with open(filepath 'w') as outfile:
+	with open(filepath,'w') as outfile:
 		json.dump(data, outfile)
 
 
 def generate_condition(location, program_state, program_failure, agent_orientation, board, agent_start, agent_end):
 	# generate the encoded location
 	x, y = location
-	encoded_location = [0 for i in range(len(board[0]) * len(board[0][0]))]
+	encoded_location = [0 for i in range(len(board) * len(board[0]))]
 	encoded_location[x * y] = 1
 
 	# generate the encoded numeric program state and numeric program failure
-	numeric_program_state = 0 if program_state else 1
-	numeric_program_failure = 1 if program_failure else 0
+	numeric_program_state = [0 if program_state else 1,]
+	numeric_program_failure = [1 if program_failure else 0,]
 
 	# generate the encoded program orientation
 	encoded_orientation = [0 for i in range(4)]
@@ -28,12 +29,12 @@ def generate_condition(location, program_state, program_failure, agent_orientati
 	flattened_encoded_board_repr = [entry for square in encoded_board_representation for entry in square]
 
 	# generate encoded agent start
-	encoded_agent_start = [0 for i in range(len(board[0]) * len(board[0][0]))]
+	encoded_agent_start = [0 for i in range(len(board) * len(board[0]))]
 	x_start, y_start = agent_start
 	encoded_agent_start[x_start * y_start] = 1
 
 	# generate encoded agent end
-	encoded_agent_end = [0 for i in range(len(board[0]) * len(board[0][0]))]
+	encoded_agent_end = [0 for i in range(len(board) * len(board[0]))]
 	x_end, y_end = agent_end
 	encoded_agent_end[x_end * y_end] = 1
 
@@ -43,11 +44,11 @@ def generate_condition(location, program_state, program_failure, agent_orientati
 def convert_square_to_numeric(square):
 	encoded_square = [0 for i in range(3)]
 
-	if square == None:
+	if square is None:
 		one_hot_index = 0
 	elif square.isBomb:
 		one_hot_index = 1
-	elif square.isBomb:
+	else:
 		one_hot_index = 2
 
 	encoded_square[one_hot_index] = 1

@@ -1,5 +1,7 @@
 from enum import Enum
 
+debug_mode = False
+
 class MovingException(Exception):
 	pass
 
@@ -196,7 +198,7 @@ class Game:
 			raise OrientationException('Orientation object must be provided to method')
 
 	def extract_state(self):
-		return self._curr_loc, self.successful, self.failure, self._orientation, self._world, self._start_loc, self._end_loc
+		return self._curr_loc, self.successful, self.failure, self._orientation, self._world._world, self._start_loc, self._end_loc
 
 
 CodeType = Enum("CodeType", "ELSE maze_moveForward maze_turn maze_ifElse maze_forever turnLeft turnRight isPathForward isPathRight isPathLeft DO")
