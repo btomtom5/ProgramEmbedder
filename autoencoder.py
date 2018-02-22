@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+import numpy as np
 
 import json
 from os import listdir
@@ -10,6 +11,10 @@ CONDITION_KEY = "cond"
 PRECONDITION_KEY = "precond"
 POSTCONDITION_KEY = "postcond"
 
+
+################################################################
+# Defines the Tensorflow Dataset object for the autoencoder
+################################################################
 
 def data_set_from_file(file_path):
     """
@@ -46,7 +51,90 @@ def my_input_fn(data_dirs, perform_shuffle=False, repeat_count=0, buffer_size=25
         dataset = dataset.shuffle(buffer_size=buffer_size)
     dataset = dataset.repeat(repeat_count)
     dataset = dataset.batch(batch_size)
-    iterator = dataset.make_one_shot_iterator()
-    batch_features, batch_labels = iterator.get_next()
-    return batch_features, batch_labels
+    iterator = dataset.make_initializable_iterator()
+    return iterator
 
+
+################################################################
+# Defines the Tensorflow Estimator object for the autoencoder
+################################################################
+
+# Program Arguments
+DATA_PATH = [""]
+
+# Hyper Parameters
+NUM_INPUTS = 784
+H1_UNITS = 256
+H2_UNITS = 128
+LEARNING_RATE = 1e-2
+BATCH_SIZE = 64
+NUM_EPOCHS = 100
+
+
+X = tf.placeholder("float", [None, NUM_INPUTS])
+iterator = my_input_fn(DATA_PATH, True, NUM_EPOCHS, batch_size=BATCH_SIZE)
+batch_x, batch_y = iterator.get_next()
+
+weights = {
+    'encoder_h1': tf.Variable(tf.random_normal([NUM_INPUTS, H1_UNITS])),
+    'encoder_h2': tf.Variable(tf.random_normal([H1_UNITS, H2_UNITS])),
+    'decoder_h1': tf.Variable(tf.random_normal([H2_UNITS, H1_UNITS])),
+    'decoder_h2': tf.Variable(tf.random_normal([H1_UNITS, NUM_INPUTS])),
+}
+biases = {
+    'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
+    'encoder_b2': tf.Variable(tf.random_normal([H2_UNITS])),
+    'decoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
+    'decoder_b2': tf.Variable(tf.random_normal([NUM_INPUTS])),
+}
+
+
+def encoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']), biases['encoder_b2']))
+    return layer_2
+
+
+def decoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']), biases['decoder_b2']))
+    return layer_2
+
+
+# Construct model
+encoder_op = encoder(X)
+decoder_op = decoder(encoder_op)
+
+# Prediction
+y_pred, y_true = decoder_op, X
+
+# Define loss and optimizer, minimize the squared error
+loss = tf.reduce_mean(tf.pow(y_true - y_pred, 2))
+optimizer = tf.train.RMSPropOptimizer(LEARNING_RATE).minimize(loss)
+
+# Initialize the variables (i.e. assign their default value)
+init = tf.global_variables_initializer()
+
+# Start Training
+# Start a new TF session
+with tf.Session() as sess:
+
+    # Run the initializer
+    sess.run(init)
+
+    # Training
+    for epoch in range(NUM_EPOCHS):
+        sess.run(iterator.initializer)
+        while True:
+            try:
+                sess.run([optimizer], feed_dict={X: batch_x})
+            except tf.errors.OutOfRangeError:
+                break
+
+        # Evaluate on Eval dataset
+        l = sess.run([loss], feed_dict={X: batch_x}) # TODO: do this on an EVAL dataset
+        print('Epoch %i: Minibatch Loss: %f' % (epoch, l))
+
+    # Evaluate on Test
+    # Encode and decode images from test set and visualize their reconstruction.
+    # TODO: test on TEST dataset
