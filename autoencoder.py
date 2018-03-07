@@ -1,98 +1,42 @@
 import tensorflow as tf
+from tf_records_writer import cond_tf_record_parser
 
-import numpy as np
-
-import json
-from os import listdir
-from os.path import isfile, join
-from functools import reduce
 
 AST_INDEX = "ast"
-CONDITION_KEY = "cond"
-PRECONDITION_KEY = "precond"
-POSTCONDITION_KEY = "postcond"
+CONDITION = "cond"
 
+TRAIN_DATA_FILE = "Datasets/Hour of Code/tfrecords/train.tfrecords"
+VAL_DATA_FILE = "Datasets/Hour of Code/tfrecords/val.tfrecords"
+TEST_DATA_FILE = "Datasets/Hour of Code/tfrecords/test.tfrecords"
 
-################################################################
-# Defines the Tensorflow Dataset object for the autoencoder
-################################################################
-
-
-def combine_datasets_func():
-    return lambda ds1, ds2: ds1.concatenate(ds2)
-
-
-def dataset_from_file(file_path):
-    """
-    Assumes file_path is of the form some/path/<Number>.json
-    """
-    with open(file_path) as f:
-        data = json.load(f)
-    precondition_tensor = tf.convert_to_tensor(data[PRECONDITION_KEY], dtype=tf.float32)
-    postcondition_tensor = tf.convert_to_tensor(data[POSTCONDITION_KEY], dtype=tf.float32)
-    dataset_1 = tf.data.Dataset.from_tensors(precondition_tensor)
-    dataset_2 = tf.data.Dataset.from_tensors(postcondition_tensor)
-    return [dataset_1, dataset_2]
-
-
-def data_set_from_directory(dir_path):
-    """
-    Assumes that the only items in dir_path are files that
-    have the name: <Number>.json
-    Assumes that there is at least one item in dir_path
-    """
-    datasets = []
-    for item_name in listdir(dir_path):
-        full_path = join(dir_path, item_name)
-        if isfile(full_path):
-            datasets.extend(dataset_from_file(full_path))
-    return reduce(combine_datasets_func(), datasets)
-
-
-def my_input_fn(data_dirs, perform_shuffle=False, repeat_count=0, buffer_size=256, batch_size=32):
-    data = []
-    for dir_path in data_dirs:
-        data.append(data_set_from_directory(dir_path))
-    dataset = reduce(combine_datasets_func(), data)
-    if perform_shuffle:
-        dataset = dataset.shuffle(buffer_size=buffer_size)
-    dataset = dataset.repeat(repeat_count)
-    dataset = dataset.batch(batch_size)
-    iterator = dataset.make_initializable_iterator()
-    return iterator
-
-
-################################################################
-# Defines the Tensorflow Estimator object for the autoencoder
-################################################################
-
-# Program Arguments
-DATA_PATH = [""]
-
-# Hyper Parameters
-NUM_INPUTS = 784
+INPUT_UNITS = 784
 H1_UNITS = 256
 H2_UNITS = 128
 LEARNING_RATE = 1e-2
 BATCH_SIZE = 64
 NUM_EPOCHS = 100
+SHUFFLE_BUFFER_SIZE = 100
 
 
-X = tf.placeholder("float", [None, NUM_INPUTS])
-iterator = my_input_fn(DATA_PATH, True, NUM_EPOCHS, batch_size=BATCH_SIZE)
-batch_x, batch_y = iterator.get_next()
+X = tf.placeholder("float", [None, INPUT_UNITS])
+iterator = tf.data.TFRecordDataset(TEST_DATA_FILE)\
+    .map(cond_tf_record_parser)\
+    .batch(BATCH_SIZE)\
+    .make_initializable_iterator()
+batch_x = iterator.get_next()
+
 
 weights = {
-    'encoder_h1': tf.Variable(tf.random_normal([NUM_INPUTS, H1_UNITS])),
+    'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS])),
     'encoder_h2': tf.Variable(tf.random_normal([H1_UNITS, H2_UNITS])),
     'decoder_h1': tf.Variable(tf.random_normal([H2_UNITS, H1_UNITS])),
-    'decoder_h2': tf.Variable(tf.random_normal([H1_UNITS, NUM_INPUTS])),
+    'decoder_h2': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS])),
 }
 biases = {
     'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
     'encoder_b2': tf.Variable(tf.random_normal([H2_UNITS])),
     'decoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
-    'decoder_b2': tf.Variable(tf.random_normal([NUM_INPUTS])),
+    'decoder_b2': tf.Variable(tf.random_normal([INPUT_UNITS])),
 }
 
 
