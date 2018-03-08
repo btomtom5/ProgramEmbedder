@@ -14,7 +14,7 @@ H1_UNITS = 256
 H2_UNITS = 128
 LEARNING_RATE = 1e-2
 BATCH_SIZE = 64
-NUM_EPOCHS = 100
+NUM_EPOCHS = 5
 SHUFFLE_BUFFER_SIZE = 100
 
 
@@ -26,9 +26,13 @@ train_x = train_iter.get_next()
 
 eval_iter = tf.data.TFRecordDataset(VAL_DATA_FILE)\
     .map(cond_tf_record_parser)\
-    .batch(1)\
     .make_initializable_iterator()
 eval_x = eval_iter.get_next()
+
+test_iter = tf.data.TFRecordDataset(TEST_DATA_FILE)\
+    .map(cond_tf_record_parser)\
+    .make_initializable_iterator()
+test_x = eval_iter.get_next()
 
 
 weights = {
@@ -89,9 +93,10 @@ with tf.Session() as sess:
             except tf.errors.OutOfRangeError:
                 break
         sess.run(eval_iter.initializer)
-        eval_loss_val = sess.run([loss], feed_dict={X: sess.run(eval_x)})
+        eval_loss_val = sess.run([loss], feed_dict={X: sess.run(tf.expand_dims(eval_x, axis=0))})
         print('Epoch %i: Evaluation Loss: %f' % (epoch, eval_loss_val[0]))
 
     # Evaluate on Test
-    # Encode and decode images from test set and visualize their reconstruction.
-    # TODO: test on TEST dataset
+    sess.run(eval_iter.initializer)
+    test_loss_val = sess.run([loss], feed_dict={X: sess.run(tf.expand_dims(test_x, axis=0))})
+    print('Test Loss: %f' % (test_loss_val[0]))
