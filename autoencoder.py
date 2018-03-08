@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tf_records_writer import cond_tf_record_parser
+from tf_records_writer import cond_tf_record_parser, COND_FEATURE_LENGTH
 
 
 AST_INDEX = "ast"
@@ -9,7 +9,7 @@ TRAIN_DATA_FILE = "Datasets/Hour of Code/tfrecords/train.tfrecords"
 VAL_DATA_FILE = "Datasets/Hour of Code/tfrecords/val.tfrecords"
 TEST_DATA_FILE = "Datasets/Hour of Code/tfrecords/test.tfrecords"
 
-INPUT_UNITS = 784
+INPUT_UNITS = COND_FEATURE_LENGTH
 H1_UNITS = 256
 H2_UNITS = 128
 LEARNING_RATE = 1e-2
@@ -18,12 +18,17 @@ NUM_EPOCHS = 100
 SHUFFLE_BUFFER_SIZE = 100
 
 
-X = tf.placeholder("float", [None, INPUT_UNITS])
-iterator = tf.data.TFRecordDataset(TEST_DATA_FILE)\
+train_iter = tf.data.TFRecordDataset(TRAIN_DATA_FILE)\
     .map(cond_tf_record_parser)\
     .batch(BATCH_SIZE)\
     .make_initializable_iterator()
-batch_x = iterator.get_next()
+train_x = train_iter.get_next()
+
+eval_iter = tf.data.TFRecordDataset(VAL_DATA_FILE)\
+    .map(cond_tf_record_parser)\
+    .batch(1)\
+    .make_initializable_iterator()
+eval_x = eval_iter.get_next()
 
 
 weights = {
@@ -53,6 +58,7 @@ def decoder(x):
 
 
 # Construct model
+X = tf.placeholder(tf.float32, [None, INPUT_UNITS])
 encoder_op = encoder(X)
 decoder_op = decoder(encoder_op)
 
@@ -75,16 +81,16 @@ with tf.Session() as sess:
 
     # Training
     for epoch in range(NUM_EPOCHS):
-        sess.run(iterator.initializer)
+        sess.run(train_iter.initializer)
         while True:
             try:
-                sess.run([optimizer], feed_dict={X: batch_x})
+                _, train_loss_val = sess.run([optimizer, loss], feed_dict={X: sess.run(train_x)})
+                print('Epoch %i: Minibatch Loss: %f' % (epoch, train_loss_val))
             except tf.errors.OutOfRangeError:
                 break
-
-        # Evaluate on Eval dataset
-        l = sess.run([loss], feed_dict={X: batch_x}) # TODO: do this on an EVAL dataset
-        print('Epoch %i: Minibatch Loss: %f' % (epoch, l))
+        sess.run(eval_iter.initializer)
+        eval_loss_val = sess.run([loss], feed_dict={X: sess.run(eval_x)})
+        print('Epoch %i: Evaluation Loss: %f' % (epoch, eval_loss_val[0]))
 
     # Evaluate on Test
     # Encode and decode images from test set and visualize their reconstruction.

@@ -4,7 +4,7 @@ import sys
 from random import shuffle
 import json
 
-CONDITION_FEATURE_LENGTH = 390
+COND_FEATURE_LENGTH = 390
 PRECONDITION = "precond"
 POSTCONDITION = "postcond"
 
@@ -39,7 +39,7 @@ def write_data_to_tf_record(data_files, tf_record_file):
 
 
 def cond_tf_record_parser(record):
-    keys_to_features = {"train/cond": tf.FixedLenFeature([CONDITION_FEATURE_LENGTH], tf.int64)}
+    keys_to_features = {"train/cond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64)}
     parsed = tf.parse_single_example(record, keys_to_features)
     return parsed["train/cond"]
 
