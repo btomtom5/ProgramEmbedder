@@ -37,28 +37,28 @@ test_x, test_y = eval_iter.get_next()
 
 
 weights = {
-    'encoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS])),
+    'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS])),
     'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS])),
-    'decoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS])),
+    'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS])),
 }
 biases = {
     'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
-    'decoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
+    'decoder_b1': tf.Variable(tf.random_normal([INPUT_UNITS])),
 }
 
 
 def encoder(x):
-    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(weights['encoder_h1'], x), biases['encoder_b1']))
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
     return layer_1
 
 
 def decoder(x):
-    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(weights['decoder_h1'], x), biases['decoder_b1']))
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
     return layer_1
 
 
 def linear_map(x):
-    transform = tf.matmul(weights['linear_map'], x)
+    transform = tf.matmul(x, weights['linear_map'])
     return transform
 
 
@@ -73,14 +73,12 @@ linear_op = linear_map(encoder_op)
 decoder_op = decoder(linear_op)
 
 P_true, P_pred = P, autoencoder_op
-Q_pred = decoder_op
+Q_true, Q_pred = Q, decoder_op
 
 auto_loss = tf.reduce_mean(tf.pow(P_true - P_pred, 2))
-end_to_end_loss = tf.losses.sigmoid_cross_entropy(Q, Q_pred)
+end_to_end_loss = tf.losses.sigmoid_cross_entropy(Q_true, Q_pred)
 regularizer = tf.nn.l2_loss(weights['encoder_h1']) \
-              + tf.nn.l2_loss(weights['encoder_h2']) \
               + tf.nn.l2_loss(weights['decoder_h1']) \
-              + tf.nn.l2_loss(weights['decoder_h2']) \
               + tf.nn.l2_loss(weights['linear_map'])
 loss = auto_loss + end_to_end_loss + REGULARIZER_COEF*regularizer
 
@@ -113,7 +111,7 @@ with tf.Session() as sess:
             P: sess.run(tf.expand_dims(eval_x, axis=0)),
             Q: sess.run(tf.expand_dims(eval_y, axis=0))
         })
-        print('Epoch %i: Evaluation Loss: %f' % (epoch, eval_loss_val[0]))
+        print('Epoch %i: Evaluation Loss: %f ####################################################' % (epoch, eval_loss_val[0]))
 
     # Evaluate on Test
     sess.run(eval_iter.initializer)
@@ -121,4 +119,4 @@ with tf.Session() as sess:
         P: sess.run(tf.expand_dims(test_x, axis=0)),
         Q: sess.run(tf.expand_dims(test_y, axis=0))
     })
-    print('Test Loss: %f' % (test_loss_val[0]))
+    print('Test Loss: %f $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$' % (test_loss_val[0]))
