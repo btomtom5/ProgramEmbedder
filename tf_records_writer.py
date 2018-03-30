@@ -15,8 +15,11 @@ VAL_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/val.tfrecords"
 TEST_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/test.tfrecords"
 
 
-def write_condition_to_tf_record(cond, writer):
-    feature = {'train/cond': _int64_feature(cond)}
+def write_condition_to_tf_record(precond, postcond, writer):
+    feature = {
+        'train/precond': _int64_feature(precond),
+        'train/postcond': _int64_feature(postcond),
+    }
     example = tf.train.Example(features=tf.train.Features(feature=feature))
     writer.write(example.SerializeToString())
 
@@ -30,18 +33,19 @@ def write_data_to_tf_record(data_files, tf_record_file):
     for json_file in data_files:
         with open(json_file) as f:
             data = json.load(f)
-        if data.get(PRECONDITION, -1) != -1:
-            write_condition_to_tf_record(data[PRECONDITION], writer)
-        if data.get(POSTCONDITION, -1) != -1:
-            write_condition_to_tf_record(data[POSTCONDITION], writer)
+        if data.get(PRECONDITION, -1) != -1 and data.get(POSTCONDITION, -1) != -1:
+            write_condition_to_tf_record(data[PRECONDITION], data[POSTCONDITION], writer)
     writer.close()
     sys.stdout.flush()
 
 
 def cond_tf_record_parser(record):
-    keys_to_features = {"train/cond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64)}
+    keys_to_features = {
+        "train/precond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64),
+        "train/postcond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64),
+    }
     parsed = tf.parse_single_example(record, keys_to_features)
-    return parsed["train/cond"]
+    return parsed['train/precond'], parsed['train/postcond']
 
 
 if __name__ == "__main__":

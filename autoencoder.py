@@ -23,44 +23,38 @@ train_iter = tf.data.TFRecordDataset(TRAIN_DATA_FILE)\
     .map(cond_tf_record_parser)\
     .batch(BATCH_SIZE)\
     .make_initializable_iterator()
-train_x = train_iter.get_next()
+train_x, train_y = train_iter.get_next()
 
 eval_iter = tf.data.TFRecordDataset(VAL_DATA_FILE)\
     .map(cond_tf_record_parser)\
     .make_initializable_iterator()
-eval_x = eval_iter.get_next()
+eval_x, eval_y = eval_iter.get_next()
 
 test_iter = tf.data.TFRecordDataset(TEST_DATA_FILE)\
     .map(cond_tf_record_parser)\
     .make_initializable_iterator()
-test_x = eval_iter.get_next()
+test_x, test_y = eval_iter.get_next()
 
 
 weights = {
-    'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS])),
-    'encoder_h2': tf.Variable(tf.random_normal([H1_UNITS, H2_UNITS])),
-    'decoder_h1': tf.Variable(tf.random_normal([H2_UNITS, H1_UNITS])),
-    'decoder_h2': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS])),
-    'linear_map': tf.Variable(tf.random_normal([INPUT_UNITS, INPUT_UNITS])),
+    'encoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS])),
+    'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS])),
+    'decoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS])),
 }
 biases = {
     'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
-    'encoder_b2': tf.Variable(tf.random_normal([H2_UNITS])),
     'decoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
-    'decoder_b2': tf.Variable(tf.random_normal([INPUT_UNITS])),
 }
 
 
 def encoder(x):
-    layer_1 = tf.nn.softmax(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
-    layer_2 = tf.nn.softmax(tf.add(tf.matmul(layer_1, weights['encoder_h2']), biases['encoder_b2']))
-    return layer_2
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(weights['encoder_h1'], x), biases['encoder_b1']))
+    return layer_1
 
 
 def decoder(x):
-    layer_1 = tf.nn.softmax(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
-    layer_2 = tf.nn.softmax(tf.add(tf.matmul(layer_1, weights['decoder_h2']), biases['decoder_b2']))
-    return layer_2
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(weights['decoder_h1'], x), biases['decoder_b1']))
+    return layer_1
 
 
 def linear_map(x):
@@ -68,54 +62,63 @@ def linear_map(x):
     return transform
 
 
-def train_autoencoder():
-    # Construct model
-    P = tf.placeholder(tf.float32, [None, INPUT_UNITS])
-    Q = tf.placeholder(tf.fl)
 
-    autoencoder_op = decoder(encoder(P))
-    encoder_op = encoder(P)
-    linear_op = linear_map(encoder_op)
-    decoder_op = decoder(linear_op)
+# Construct model
+P = tf.placeholder(tf.float32, [None, INPUT_UNITS])
+Q = tf.placeholder(tf.float32, [None, INPUT_UNITS])
 
-    P_true, P_pred = P, autoencoder_op
-    Q_pred = decoder_op
+autoencoder_op = decoder(encoder(P))
+encoder_op = encoder(P)
+linear_op = linear_map(encoder_op)
+decoder_op = decoder(linear_op)
 
-    auto_loss = tf.reduce_mean(tf.pow(P_true - P_pred, 2))
-    end_to_end_loss = tf.losses.softmax_cross_entropy(Q, Q_pred)
-    regularizer = tf.nn.l2_loss(weights['encoder_h1']) \
-                  + tf.nn.l2_loss(weights['encoder_h2']) \
-                  + tf.nn.l2_loss(weights['decoder_h1']) \
-                  + tf.nn.l2_loss(weights['decoder_h2']) \
-                  + tf.nn.l2_loss(weights['linear_map'])
-    loss = auto_loss + end_to_end_loss + REGULARIZER_COEF*regularizer
+P_true, P_pred = P, autoencoder_op
+Q_pred = decoder_op
 
-    optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(loss)
+auto_loss = tf.reduce_mean(tf.pow(P_true - P_pred, 2))
+end_to_end_loss = tf.losses.sigmoid_cross_entropy(Q, Q_pred)
+regularizer = tf.nn.l2_loss(weights['encoder_h1']) \
+              + tf.nn.l2_loss(weights['encoder_h2']) \
+              + tf.nn.l2_loss(weights['decoder_h1']) \
+              + tf.nn.l2_loss(weights['decoder_h2']) \
+              + tf.nn.l2_loss(weights['linear_map'])
+loss = auto_loss + end_to_end_loss + REGULARIZER_COEF*regularizer
 
-    # Initialize the variables (i.e. assign their default value)
-    init = tf.global_variables_initializer()
+optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(loss)
 
-    # Start Training
-    # Start a new TF session
-    with tf.Session() as sess:
+# Initialize the variables (i.e. assign their default value)
+init = tf.global_variables_initializer()
 
-        # Run the initializer
-        sess.run(init)
+# Start Training
+# Start a new TF session
+with tf.Session() as sess:
 
-        # Training
-        for epoch in range(NUM_EPOCHS):
-            sess.run(train_iter.initializer)
-            while True:
-                try:
-                    _, train_loss_val = sess.run([optimizer, loss], feed_dict={P: sess.run(train_x)})
-                    print('Epoch %i: Minibatch Loss: %f' % (epoch, train_loss_val))
-                except tf.errors.OutOfRangeError:
-                    break
-            sess.run(eval_iter.initializer)
-            eval_loss_val = sess.run([loss], feed_dict={P: sess.run(tf.expand_dims(eval_x, axis=0))})
-            print('Epoch %i: Evaluation Loss: %f' % (epoch, eval_loss_val[0]))
+    # Run the initializer
+    sess.run(init)
 
-        # Evaluate on Test
+    # Training
+    for epoch in range(NUM_EPOCHS):
+        sess.run(train_iter.initializer)
+        while True:
+            try:
+                _, train_loss_val = sess.run([optimizer, loss], feed_dict={
+                    P: sess.run(train_x),
+                    Q: sess.run(train_y)
+                })
+                print('Epoch %i: Minibatch Loss: %f' % (epoch, train_loss_val))
+            except tf.errors.OutOfRangeError:
+                break
         sess.run(eval_iter.initializer)
-        test_loss_val = sess.run([loss], feed_dict={P: sess.run(tf.expand_dims(test_x, axis=0))})
-        print('Test Loss: %f' % (test_loss_val[0]))
+        eval_loss_val = sess.run([loss], feed_dict={
+            P: sess.run(tf.expand_dims(eval_x, axis=0)),
+            Q: sess.run(tf.expand_dims(eval_y, axis=0))
+        })
+        print('Epoch %i: Evaluation Loss: %f' % (epoch, eval_loss_val[0]))
+
+    # Evaluate on Test
+    sess.run(eval_iter.initializer)
+    test_loss_val = sess.run([loss], feed_dict={
+        P: sess.run(tf.expand_dims(test_x, axis=0)),
+        Q: sess.run(tf.expand_dims(test_y, axis=0))
+    })
+    print('Test Loss: %f' % (test_loss_val[0]))
