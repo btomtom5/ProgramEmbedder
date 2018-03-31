@@ -1,5 +1,7 @@
+from tf_records import parse_ast_data
+
 import tensorflow as tf
-from tf_records_writer import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS
+from tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS
 
 
 AST_INDEX = "ast"
@@ -9,13 +11,17 @@ TRAIN_DATA_FILE = "Datasets/Hour of Code/tfrecords/train.tfrecords"
 VAL_DATA_FILE = "Datasets/Hour of Code/tfrecords/val.tfrecords"
 TEST_DATA_FILE = "Datasets/Hour of Code/tfrecords/test.tfrecords"
 
+TRAIN_AST_FILE = "Datasets/Hour of Code/ast_data/train.ast"
+VAL_AST_FILE = "Datasets/Hour of Code/ast_data/val.ast"
+TEST_AST_FILE = "Datasets/Hour of Code/ast_data/test.ast"
+
 H1_UNITS = 256
 H2_UNITS = 128
 LEARNING_RATE = 1e-2
 REGULARIZER_COEF = 0.1
 
 BATCH_SIZE = 64
-NUM_EPOCHS = 5
+NUM_EPOCHS = 60
 SHUFFLE_BUFFER_SIZE = 100
 
 
@@ -23,24 +29,30 @@ train_iter = tf.data.TFRecordDataset(TRAIN_DATA_FILE)\
     .map(cond_tf_record_parser)\
     .batch(BATCH_SIZE)\
     .make_initializable_iterator()
-train_x, train_y = train_iter.get_next()
+train_x, train_y, train_id = train_iter.get_next()
 
 eval_iter = tf.data.TFRecordDataset(VAL_DATA_FILE)\
     .map(cond_tf_record_parser)\
     .make_initializable_iterator()
-eval_x, eval_y = eval_iter.get_next()
+eval_x, eval_y, eval_id = eval_iter.get_next()
 
 test_iter = tf.data.TFRecordDataset(TEST_DATA_FILE)\
     .map(cond_tf_record_parser)\
     .make_initializable_iterator()
-test_x, test_y = eval_iter.get_next()
+test_x, test_y, test_id = eval_iter.get_next()
+
+
+train_ast_to_id, train_asts = parse_ast_data(TRAIN_AST_FILE)
+eval_ast_to_id, eval_asts = parse_ast_data(VAL_AST_FILE)
+test_ast_to_id, test_asts = parse_ast_data(TEST_AST_FILE)
 
 
 weights = {
     'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS])),
-    'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS])),
     'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS])),
 }
+program_matricies = []
+for i in
 biases = {
     'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
     'decoder_b1': tf.Variable(tf.random_normal([INPUT_UNITS])),
