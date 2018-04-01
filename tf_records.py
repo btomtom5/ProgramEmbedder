@@ -17,10 +17,10 @@ MATRICES_DIR = "Datasets/Hour of Code/matrices"
 AST_DATA_FILE = "Datasets/Hour of Code/ast_data/ast_to_id.txt"
 
 
-def parse_ast_data(file_name):
+def parse_ast_data():
     with open(AST_DATA_FILE, 'r') as f:
-        ast_to_id = json.loads(next(f))
-        asts = json.loads(next(f))
+        ast_to_id = json.loads(f.readline())
+        asts = json.loads(f.readline())
     return ast_to_id, asts
 
 
