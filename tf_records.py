@@ -10,83 +10,104 @@ PRECONDITION = "precond"
 POSTCONDITION = "postcond"
 AST = "ast"
 
-DATA_DIRECTORY = "Datasets/Hour of Code/hoare_triples"
-
-TRAIN_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/train.tfrecords"
-VAL_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/val.tfrecords"
-TEST_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/test.tfrecords"
-
-TRAIN_AST_FILE = "Datasets/Hour of Code/ast_data/train.ast"
-VAL_AST_FILE = "Datasets/Hour of Code/ast_data/val.ast"
-TEST_AST_FILE = "Datasets/Hour of Code/ast_data/test.ast"
+HOARE_TRIPLES_DIR = "Datasets/Hour of Code/example"
+INTERMEDIATE_DIR = "Datasets/Hour of Code/intermediate"
+TF_RECORDS_DIR = "Datasets/Hour of Code/tfrecords"
+MATRICES_DIR = "Datasets/Hour of Code/matrices"
+AST_DATA_FILE = "Datasets/Hour of Code/ast_data/ast_to_id.txt"
 
 
-def write_condition_to_tf_record(precond, postcond, ast_id, writer):
-    feature = {
-        'precond': _int64_feature(precond),
-        'postcond': _int64_feature(postcond),
-        'ast_id': _int64_feature([ast_id])
-    }
-    example = tf.train.Example(features=tf.train.Features(feature=feature))
-    writer.write(example.SerializeToString())
+def parse_ast_data(file_name):
+    with open(AST_DATA_FILE, 'r') as f:
+        ast_to_id = json.loads(next(f))
+        asts = json.loads(next(f))
+    return ast_to_id, asts
+
+
+def write_to_intermediate_file(inter_file, precond, postcond):
+    with open(inter_file, 'w+') as f:
+        f.write("{}\n".format(json.dumps(precond)))
+        f.write("{}\n".format(json.dumps(postcond)))
 
 
 def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
 
-def write_data_to_tf_record(data_files, tf_record_file, ast_info_file):
-    writer = tf.python_io.TFRecordWriter(tf_record_file)
-    ast_to_id = {}
-    asts = []
-    for json_file in data_files:
-        with open(json_file) as f:
-            data = json.load(f)
-        if data.get(PRECONDITION, -1) != -1 and data.get(POSTCONDITION, -1) != -1 and data.get(AST, -1 != -1):
-            ast_string = json.dumps(data[AST])
-            if ast_to_id.get(ast_string, -1) == -1:
-                asts.append(ast_string)
-                ast_id = len(asts) - 1
-                ast_to_id[ast_string] = ast_id
-            write_condition_to_tf_record(data[PRECONDITION], data[POSTCONDITION], ast_to_id[ast_string], writer)
-    writer.close()
-    sys.stdout.flush()
-    with open(ast_info_file, 'w+') as f:
-        f.write("{}\n".format(json.dumps(ast_to_id)))
-        f.write("{}\n".format(json.dumps(asts)))
-
-
 def cond_tf_record_parser(record):
     keys_to_features = {
         "precond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64),
         "postcond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64),
-        "ast_id": tf.FixedLenFeature([AST_ID_LENGTH], tf.int64)
     }
     parsed = tf.parse_single_example(record, keys_to_features)
-    return parsed['precond'], parsed['postcond'], parsed['ast_id']
+    return parsed['precond'], parsed['postcond']
 
 
-def parse_ast_data(file_name):
-    with open(TRAIN_AST_FILE, 'r') as f:
-        ast_to_id = json.loads(next(f))
-        asts = json.loads(next(f))
-    return ast_to_id, asts
+def write_condition_to_tf_record(precond, postcond, writer):
+    feature = {
+        'precond': _int64_feature(precond),
+        'postcond': _int64_feature(postcond),
+    }
+    example = tf.train.Example(features=tf.train.Features(feature=feature))
+    writer.write(example.SerializeToString())
+
+
+def write_to_tf_record(tf_record_file, inter_file):
+    with open(inter_file, 'r') as inter_f:
+        writer = tf.python_io.TFRecordWriter(tf_record_file)
+        while True:
+            line1, line2 = inter_f.readline().strip(), inter_f.readline().strip()
+            if not line1 or not line2:
+                break
+            else:
+                precond = json.loads(line1)
+                postcond = json.loads(line2)
+                write_condition_to_tf_record(precond, postcond, writer)
+        writer.close()
+        sys.stdout.flush()
+    print("Writing TF-Record: {}".format(tf_record_file))
 
 
 if __name__ == "__main__":
-    data_files = []
-    for root, dirs, files in os.walk(DATA_DIRECTORY):
+    ast_to_id = {}
+    asts = []
+    for root, dirs, files in os.walk(HOARE_TRIPLES_DIR):
         for file in files:
             if file.endswith(".json"):
-                data_file_path = os.path.join(root, file)
-                data_files.append(data_file_path)
-    shuffle(data_files)
+                json_file_path = os.path.join(root, file)
+                with open(json_file_path, 'r') as json_file:
+                    data = json.load(json_file)
+                if data.get(PRECONDITION, -1) != -1 and data.get(POSTCONDITION, -1) != -1 and data.get(AST, -1 != -1):
+                    ast_string = json.dumps(data[AST])
+                    if ast_to_id.get(ast_string, -1) == -1:
+                        ast_id = len(asts)
+                        asts.append(ast_string)
+                        ast_to_id[ast_string] = ast_id
+                    inter_name = "{}.inter".format(ast_to_id[ast_string])
+                    inter_file = os.path.join(INTERMEDIATE_DIR, inter_name)
+                    write_to_intermediate_file(inter_file, data[PRECONDITION], data[POSTCONDITION])
 
-    train = data_files[0:int(0.7 * len(data_files))]
-    write_data_to_tf_record(train, TRAIN_TF_RECORDS_FILE, TRAIN_AST_FILE)
+    for root, dirs, files in os.walk(INTERMEDIATE_DIR):
+        for file in files:
+            ast_id = os.path.basename(file)
+            file_path = os.path.join(INTERMEDIATE_DIR, file)
+            tf_record_name = "{}.tfrecord".format(ast_id)
+            tf_record_file = os.path.join(TF_RECORDS_DIR, tf_record_name)
+            write_to_tf_record(tf_record_file, file_path)
 
-    val = data_files[int(0.7 * len(data_files)):int(0.85 * len(data_files))]
-    write_data_to_tf_record(val, VAL_TF_RECORDS_FILE, VAL_AST_FILE)
+    with open(AST_DATA_FILE, 'w+') as ast_file:
+        ast_file.write("{}\n".format(json.dumps(ast_to_id)))
+        ast_file.write("{}\n".format(json.dumps(asts)))
 
-    test = data_files[int(0.85 * len(data_files)):]
-    write_data_to_tf_record(test, TEST_TF_RECORDS_FILE, TEST_AST_FILE)
+
+
+
+
+
+
+
+    # 1) for each file, conver the ast --> ast_string, ID
+    # 2) create a dict for ID --> ast_string and an array, asts
+    # 3) generate a dict of ID -- [(hoare, triple), (hoare, triple), (hoare, triple), ...]
+    # 4) for each key in dict of ID's, for each hoare triple, write pre and post conditions to ID.tfrecord
+    # 5) write id_to_ast
