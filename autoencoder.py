@@ -1,7 +1,7 @@
 import os
 
 import tensorflow as tf
-from tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS, parse_ast_data, TF_RECORDS_DIR
+from tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS, parse_ast_data, TF_RECORDS_DIR, MATRICES_DIR
 
 
 AST_INDEX = "ast"
@@ -12,7 +12,7 @@ H2_UNITS = 128
 LEARNING_RATE = 1e-2
 REGULARIZER_COEF = 0.1
 
-BATCH_SIZE = 64
+BATCH_SIZE = 3
 NUM_EPOCHS = 60
 SHUFFLE_BUFFER_SIZE = 100
 
@@ -28,14 +28,14 @@ for root, dirs, files in os.walk(TF_RECORDS_DIR):
         ast_to_id, asts = parse_ast_data()
 
         weights = {
-            'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS])),
-            'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS])),
-            'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS])),
+            'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS]), name="encoder_h1"),
+            'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS]), name='linear_map'),
+            'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS]), name='decoder_h1'),
         }
 
         biases = {
-            'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS])),
-            'decoder_b1': tf.Variable(tf.random_normal([INPUT_UNITS])),
+            'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS]), name='encoder_b1'),
+            'decoder_b1': tf.Variable(tf.random_normal([INPUT_UNITS]), name='decoder_b1'),
         }
 
 
@@ -72,20 +72,13 @@ for root, dirs, files in os.walk(TF_RECORDS_DIR):
                       + tf.nn.l2_loss(weights['decoder_h1']) \
                       + tf.nn.l2_loss(weights['linear_map'])
         loss = auto_loss + end_to_end_loss + REGULARIZER_COEF*regularizer
-
         optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(loss)
 
         # Initialize the variables (i.e. assign their default value)
         init = tf.global_variables_initializer()
-
-        # Start Training
-        # Start a new TF session
+        saver = tf.train.Saver()
         with tf.Session() as sess:
-
-            # Run the initializer
             sess.run(init)
-
-            # Training
             for epoch in range(NUM_EPOCHS):
                 sess.run(data_iter.initializer)
                 while True:
@@ -94,6 +87,13 @@ for root, dirs, files in os.walk(TF_RECORDS_DIR):
                             P: sess.run(preconds),
                             Q: sess.run(postconds)
                         })
-                        print('Epoch %i: Minibatch Loss: %f' % (epoch, train_loss_val))
+                        print('File: {} Epoch {}: Minibatch Loss: {}'.format(file, epoch, train_loss_val))
                     except tf.errors.OutOfRangeError:
                         break
+                    except tf.errors.InvalidArgumentError:
+                        break  # typically happens when there isn't enough data for a given AST
+            ast_id, _ = os.path.splitext(os.path.basename(file))
+            program_matrix_file = os.path.join(MATRICES_DIR, "{}.ckpt".format(ast_id))
+            save_path = saver.save(sess, program_matrix_file)
+        print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+        # write matrix program matrix to file

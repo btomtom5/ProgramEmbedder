@@ -1,7 +1,6 @@
 import os
 import tensorflow as tf
 import sys
-from random import shuffle
 import json
 
 AST_ID_LENGTH = 1
@@ -10,10 +9,10 @@ PRECONDITION = "precond"
 POSTCONDITION = "postcond"
 AST = "ast"
 
-HOARE_TRIPLES_DIR = "Datasets/Hour of Code/example"
+HOARE_TRIPLES_DIR = "Datasets/Hour of Code/hoare_triples"
 INTERMEDIATE_DIR = "Datasets/Hour of Code/intermediate"
 TF_RECORDS_DIR = "Datasets/Hour of Code/tfrecords"
-MATRICES_DIR = "Datasets/Hour of Code/matrices"
+MATRICES_DIR = "Datasets/Hour of Code/ast_matrices"
 AST_DATA_FILE = "Datasets/Hour of Code/ast_data/ast_to_id.txt"
 
 
@@ -25,7 +24,7 @@ def parse_ast_data():
 
 
 def write_to_intermediate_file(inter_file, precond, postcond):
-    with open(inter_file, 'w+') as f:
+    with open(inter_file, 'a') as f:
         f.write("{}\n".format(json.dumps(precond)))
         f.write("{}\n".format(json.dumps(postcond)))
 
@@ -74,6 +73,7 @@ if __name__ == "__main__":
     for root, dirs, files in os.walk(HOARE_TRIPLES_DIR):
         for file in files:
             if file.endswith(".json"):
+                print("Json file: {}".format(file))
                 json_file_path = os.path.join(root, file)
                 with open(json_file_path, 'r') as json_file:
                     data = json.load(json_file)
@@ -89,7 +89,9 @@ if __name__ == "__main__":
 
     for root, dirs, files in os.walk(INTERMEDIATE_DIR):
         for file in files:
-            ast_id = os.path.basename(file)
+            print("tfrecord: {}".format(file))
+            ast_id, _ = os.path.splitext(file)
+            ast_id = os.path.basename(ast_id)
             file_path = os.path.join(INTERMEDIATE_DIR, file)
             tf_record_name = "{}.tfrecord".format(ast_id)
             tf_record_file = os.path.join(TF_RECORDS_DIR, tf_record_name)
@@ -98,16 +100,3 @@ if __name__ == "__main__":
     with open(AST_DATA_FILE, 'w+') as ast_file:
         ast_file.write("{}\n".format(json.dumps(ast_to_id)))
         ast_file.write("{}\n".format(json.dumps(asts)))
-
-
-
-
-
-
-
-
-    # 1) for each file, conver the ast --> ast_string, ID
-    # 2) create a dict for ID --> ast_string and an array, asts
-    # 3) generate a dict of ID -- [(hoare, triple), (hoare, triple), (hoare, triple), ...]
-    # 4) for each key in dict of ID's, for each hoare triple, write pre and post conditions to ID.tfrecord
-    # 5) write id_to_ast
