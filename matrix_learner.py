@@ -1,7 +1,7 @@
 import os
 
 import tensorflow as tf
-from tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS, parse_ast_data, TF_RECORDS_DIR, MATRICES_DIR
+from matrix_learner_tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS, parse_ast_data, TF_RECORDS_DIR, MATRICES_DIR
 
 
 AST_INDEX = "ast"
