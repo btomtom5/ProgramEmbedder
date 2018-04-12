@@ -4,8 +4,8 @@ class World:
 		self.height = height
 		self.width = width
 
-	def print_world(self):
-		print(self._world)
+	def __repr__(self):
+		return self._world
 
 	def set_square(self, x_coord, y_coord):
 		self._world[y_coord][x_coord] = Square()
@@ -77,7 +77,6 @@ class World:
 class Square:
 	def __init__(self, isBomb=False):
 		self.isBomb = isBomb
-
 
 	def __repr__(self):
 		if self.isBomb:

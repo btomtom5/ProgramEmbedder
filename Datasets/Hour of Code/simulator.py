@@ -3,7 +3,6 @@ import glob
 import sys
 
 from world import World
-from writer import generate_condition, write_hoare_triple
 from game import Game, Orientation
 
 import pprint
@@ -70,26 +69,26 @@ def create_large_game(ast):
 
 
 ################################## PROCESS THE THE TWO HOC DATASETS #############################
-def process_datasets():
+def generate_datasets():
 	## list of hoc4 json files
-	hoc4_paths = glob.glob("./hoc4/asts/*.json")
+	hoc4_paths = glob.glob("./data/hoc4/asts/*.json")
 
 	total_games = 0
 	total_successful = 0
 
-	hoare_path = "./hoare_triples/"
+	hoare_path = "./data/hoare_triples/"
 	dataset_count = 0
 
+	print(len(hoc4_paths))
 	################################## PROCESS THE HOC 4 DATASET #################################
 	for program_path in hoc4_paths:
 		ast = json.load(open(program_path))
+		ast_name = program_path.split("/")[-1].split(".")[0]
 		small_game = create_small_game(ast)
-		precond = generate_condition(*small_game.extract_state())
 		small_game.run()
+		small_game.write_records(hoare_path + "hoc4/" + ast_name)
 		total_games += 1
 		total_successful += 1 if small_game.successful else 0
-		post_cond = generate_condition(*small_game.extract_state())
-		write_hoare_triple(ast, precond, post_cond, hoare_path + "hoc4/" + str(dataset_count) + ".json")
 		dataset_count +=1
 
 
@@ -101,7 +100,7 @@ def process_datasets():
 
 
 	## list of hoc18 json files
-	hoc18_paths = glob.glob("./hoc18/asts/*.json")
+	hoc18_paths = glob.glob("./data/hoc18/asts/*.json")
 
 	total_games = 0
 	total_successful = 0
@@ -112,13 +111,12 @@ def process_datasets():
 
 	for program_path in hoc18_paths:
 		ast = json.load(open(program_path))
+		ast_name = program_path.split("/")[-1].split(".")[0]
 		large_game = create_large_game(ast)
-		precond = generate_condition(*large_game.extract_state())
 		large_game.run()
+		large_game.write_records(hoare_path + "hoc18/" + ast_name)
 		total_games += 1
 		total_successful += 1 if large_game.successful else 0
-		post_cond = generate_condition(*large_game.extract_state())
-		write_hoare_triple(ast, precond, post_cond, hoare_path + "hoc18/" + str(dataset_count) + ".json")
 		dataset_count += 1
 
 	print("============Running the large games=============")
@@ -137,6 +135,7 @@ def process_file(file_name, small_world=True):
 	world.run()
 	print(world.successful)
 
+
 if __name__ == "__main__":	
 	if len(sys.argv) > 1:
 		file_name = sys.argv[1]
@@ -144,8 +143,9 @@ if __name__ == "__main__":
 		file_name = None
 
 	if file_name is None:
-		process_datasets()
+		generate_datasets()
 	else:
 		process_file(file_name)
+
 
 

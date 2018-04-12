@@ -1,13 +1,22 @@
 import json
 
+class Record:
 
-def write_hoare_triple(ast, precond, postcond, filepath):
-	data = {}
-	data["ast"] = ast
-	data["precond"] = precond
-	data["postcond"] = postcond
-	with open(filepath,'w') as outfile:
-		json.dump(data, outfile)
+	def __init__(self, precond, postcond, ast):
+		self.precond_list = precond
+		self.postcond_list = postcond
+		self.ast = ast
+		self._precond = generate_condition(*precond)
+		self._postcond = generate_condition(*postcond)
+
+
+	def write_hoare_triple(self, filepath):
+		data = {}
+		data["ast"] = self.ast
+		data["precond"] = self._precond
+		data["postcond"] = self._postcond
+		with open(filepath,'w') as outfile:
+			json.dump(data, outfile)
 
 
 def generate_condition(location, program_state, program_failure, agent_orientation, board, agent_start, agent_end):
@@ -54,6 +63,4 @@ def convert_square_to_numeric(square):
 	encoded_square[one_hot_index] = 1
 
 	return encoded_square
-
-
 

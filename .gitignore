@@ -1,3 +1,4 @@
-Datasets/
+Datasets/Hour\ of\ Code/data/
 .idea/
 __pycache__/
+venv/*
