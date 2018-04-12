@@ -79,7 +79,7 @@ def generate_datasets():
 	hoare_path = "./data/hoare_triples/"
 	dataset_count = 0
 
-	print(len(hoc4_paths))
+
 	################################## PROCESS THE HOC 4 DATASET #################################
 	for program_path in hoc4_paths:
 		ast = json.load(open(program_path))
