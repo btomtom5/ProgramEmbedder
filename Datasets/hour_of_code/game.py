@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class MovingException(Exception):
     pass
 
@@ -21,10 +22,10 @@ class Orientation(Enum):
 
 class Game:
     def __init__(self, world, startCoords, endCoords, orientation, ast):
-        ## Import here to avoid circular imports
+        # Import here to avoid circular imports
         from ast_traverser import AstTraverser
 
-        self._world = world
+        self.world = world
         self._start_loc = startCoords
         self.end_loc = endCoords
         self.curr_loc = startCoords
@@ -94,7 +95,7 @@ class Game:
 
         self.curr_loc = new_x, new_y
 
-        return self._world.checkCoords(*self.curr_loc)
+        return self.world.checkCoords(*self.curr_loc)
 
     def turn_left(self):
         if self.orientation == Orientation.left:
@@ -129,7 +130,7 @@ class Game:
             raise OrientationException('Orientation object must be provided to method')
 
     def extract_state(self):
-        return self.curr_loc, self.successful, self.failure, self.orientation, self._world._world, self._start_loc, self.end_loc
+        return self.curr_loc, self.successful, self.failure, self.orientation, repr(self.world), self._start_loc, self.end_loc
 
     def write_records(self, path):
         self._ast_traverser.write_records(path)
