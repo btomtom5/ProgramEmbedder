@@ -5,8 +5,8 @@ from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 
 
 BATCH_SIZE = 64
-HIDDEN_STATE_SIZE = [200, 100, H1_UNITS]
-NUM_LSTM_LAYERS = 3
+MODEL_OUTPUT_DIM = H1_UNITS**2
+HIDDEN_STATE_SIZE = [4*MODEL_OUTPUT_DIM, 2*MODEL_OUTPUT_DIM, MODEL_OUTPUT_DIM]
 NUM_EPOCHS = 100
 
 data_iter_train = tf.data.TFRecordDataset(TF_RECORD_TRAIN)\
@@ -15,13 +15,15 @@ data_iter_train = tf.data.TFRecordDataset(TF_RECORD_TRAIN)\
             .make_initializable_iterator()
 sequences_train, matrices_train = data_iter_train.get_next()
 
-data_iter_eval = tf.data.TFRecordDataset(TF_RECORD_TRAIN)\
+data_iter_eval = tf.data.TFRecordDataset(TF_RECORD_EVAL)\
             .map(tf_record_parser)\
+            .batch(BATCH_SIZE)\
             .make_initializable_iterator()
 sequences_eval, matrices_eval = data_iter_eval.get_next()
 
-data_iter_test = tf.data.TFRecordDataset(TF_RECORD_TRAIN)\
+data_iter_test = tf.data.TFRecordDataset(TF_RECORD_TEST)\
             .map(tf_record_parser)\
+            .batch(BATCH_SIZE)\
             .make_initializable_iterator()
 sequences_test, matrices_test = data_iter_test.get_next()
 
@@ -32,11 +34,11 @@ def multi_lstm_model():
 
 
 Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
-Mats = tf.placeholder(tf.float32, [None, H1_UNITS, H1_UNITS])
+Mats = tf.placeholder(tf.float32, [None, H1_UNITS**2])
 
 lstm_model = multi_lstm_model()
-output, state = tf.nn.dynamic_rnn(lstm_model, Seqs)
-predicted_matrices = tf.gather(output, [MAX_SEQUENCE_LENGTH - 1], axis=1)
+output, state = tf.nn.dynamic_rnn(lstm_model, Seqs, dtype=tf.float32)
+predicted_matrices = tf.unstack(tf.gather(output, [MAX_SEQUENCE_LENGTH - 1], axis=1), axis=1)[0]
 
 loss = tf.losses.mean_squared_error(Mats, predicted_matrices)
 optimizer = tf.train.AdamOptimizer().minimize(loss)
@@ -52,7 +54,7 @@ with tf.Session() as sess:
                     Seqs: sess.run(sequences_train),
                     Mats: sess.run(matrices_train)
                 })
-                print('File: {} Epoch {}: Minibatch Loss: {}'.format(file, epoch, train_loss_val))
+                print('Epoch {}: Minibatch Loss: {}'.format(epoch, train_loss_val))
             except tf.errors.OutOfRangeError:
                 break
             except tf.errors.InvalidArgumentError:
