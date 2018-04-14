@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, numpy as np
 import tensorflow as tf
 from ast_tokenizer import ast_tokenizer as ast_to_sequence, NUM_TOKENS as TOKEN_DIMENSIONS
 
@@ -6,7 +6,10 @@ from matrix_learner import H1_UNITS
 from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR
 
 
-TF_RECORD_FILE = "Datasets/Hour of Code/matrix_predictor.tfrecord"
+TF_RECORD_TRAIN = "Datasets/hour_of_code/data/mat_pred_train.tfrecord"
+TF_RECORD_EVAL = "Datasets/hour_of_code/data/mat_pred_eval.tfrecord"
+TF_RECORD_TEST = "Datasets/hour_of_code/data/mat_pred_test.tfrecord"
+
 MAX_SEQUENCE_LENGTH = 20
 
 
@@ -50,10 +53,9 @@ def write_to_tf_record(writer, sequence, matrix):
     writer.write(example.SerializeToString())
 
 
-if __name__ == "main":
-    ast_to_id, asts = parse_ast_data()
-    writer = tf.python_io.TFRecordWriter(TF_RECORD_FILE)
-    for id in range(len(asts)):
+def create_tf_record_from_ast_ids(ids, file_path):
+    writer = tf.python_io.TFRecordWriter(file_path)
+    for id in ids:
         tf.reset_default_graph()
         matrix = tf.get_variable("linear_map", shape=[H1_UNITS, H1_UNITS])
         matrix_file_path = os.path.join(MATRICES_DIR, "{}.ckpt".format(id))
@@ -65,3 +67,16 @@ if __name__ == "main":
             write_to_tf_record(writer, ast_seq, var_mat)
     writer.close()
     sys.stdout.flush()
+
+
+if __name__ == "main":
+    ast_to_id, asts = parse_ast_data()
+    ids = np.random.permutation(len(ast_to_id))
+    train_frac, eval_frac = int(0.8*len(ast_to_id)), int(0.9*len(ast_to_id))
+    train_ids = ids[:train_frac]
+    eval_ids = ids[train_frac: eval_frac]
+    test_ids = ids[eval_frac:]
+    create_tf_record_from_ast_ids(train_ids, TF_RECORD_TRAIN)
+    create_tf_record_from_ast_ids(eval_ids, TF_RECORD_EVAL)
+    create_tf_record_from_ast_ids(test_ids, TF_RECORD_TEST)
+
