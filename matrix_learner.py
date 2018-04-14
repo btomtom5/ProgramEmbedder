@@ -10,7 +10,7 @@ CONDITION = "cond"
 H1_UNITS = 256
 H2_UNITS = 128
 LEARNING_RATE = 1e-2
-REGULARIZER_COEF = 0.1
+REGULARIZER_COEFF = 0.1
 
 BATCH_SIZE = 3
 NUM_EPOCHS = 60
@@ -71,7 +71,7 @@ for root, dirs, files in os.walk(TF_RECORDS_DIR):
         regularizer = tf.nn.l2_loss(weights['encoder_h1']) \
                       + tf.nn.l2_loss(weights['decoder_h1']) \
                       + tf.nn.l2_loss(weights['linear_map'])
-        loss = auto_loss + end_to_end_loss + REGULARIZER_COEF*regularizer
+        loss = auto_loss + end_to_end_loss + REGULARIZER_COEFF * regularizer
         optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(loss)
 
         # Initialize the variables (i.e. assign their default value)
