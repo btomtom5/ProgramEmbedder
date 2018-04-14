@@ -130,7 +130,7 @@ class Game:
             raise OrientationException('Orientation object must be provided to method')
 
     def extract_state(self):
-        return self.curr_loc, self.successful, self.failure, self.orientation, repr(self.world), self._start_loc, self.end_loc
+        return self.curr_loc, self.successful, self.failure, self.orientation, self.world._world, self._start_loc, self.end_loc
 
     def write_records(self, path):
         self._ast_traverser.write_records(path)

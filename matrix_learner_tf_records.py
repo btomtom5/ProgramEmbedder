@@ -9,11 +9,11 @@ PRECONDITION = "precond"
 POSTCONDITION = "postcond"
 AST = "ast"
 
-HOARE_TRIPLES_DIR = "Datasets/Hour of Code/hoare_triples"
-INTERMEDIATE_DIR = "Datasets/Hour of Code/intermediate"
-TF_RECORDS_DIR = "Datasets/Hour of Code/tfrecords"
-MATRICES_DIR = "Datasets/Hour of Code/ast_matrices"
-AST_DATA_FILE = "Datasets/Hour of Code/ast_data/ast_to_id.txt"
+HOARE_TRIPLES_DIR = "Datasets/hour_of_code/data/hoare_triples"
+INTERMEDIATE_DIR = "Datasets/hour_of_code/data/intermediate"
+TF_RECORDS_DIR = "Datasets/hour_of_code/data/tfrecords"
+MATRICES_DIR = "Datasets/hour_of_code/data/ast_matrices"
+AST_DATA_FILE = "Datasets/hour_of_code/data/ast_data/ast_to_id.txt"
 
 
 def parse_ast_data():

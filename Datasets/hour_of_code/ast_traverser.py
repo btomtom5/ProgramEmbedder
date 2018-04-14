@@ -1,7 +1,7 @@
 import json
 from record import Record
 from enum import Enum
-from util import log
+from util import log, is_placeholder
 
 from game import MovingException, MaxDepthException
 
@@ -31,7 +31,7 @@ class AstTraverser:
         precond = list(self._game.extract_state())
         ast_copy = dict(ast)
 
-        if _is_placeholder(ast):
+        if is_placeholder(ast):
             if "children" in ast:
                 for sub_ast in ast["children"]:
                     try:
@@ -103,12 +103,6 @@ class AstTraverser:
     def write_records(self, path):
         for i, record in enumerate(self._records):
             record.write_hoare_triple(path + "_ast" + str(i) + ".json")
-
-
-def _is_placeholder(ast):
-    return (ast["type"] == "program" or ast["type"] == "statementList" or
-            ast["type"] == "maze_turn" or ast["type"] == "DO" or
-            ast["type"] == "ELSE")
 
 
 CodeType = Enum("CodeType", "ELSE maze_moveForward maze_turn maze_ifElse maze_forever turnLeft turnRight isPathForward isPathRight isPathLeft DO")
