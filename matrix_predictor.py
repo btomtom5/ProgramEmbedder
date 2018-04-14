@@ -1,10 +1,11 @@
 import tensorflow as tf
 
-from matrix_predictor_tf_records import TF_RECORD_FILE, tf_record_parser, STATEMENT_DIMENSION, MAX_SEQUENCE_LENGTH, H1_UNITS
+from matrix_predictor_tf_records import TF_RECORD_FILE, tf_record_parser, H1_UNITS, MAX_SEQUENCE_LENGTH
+from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 
 
 BATCH_SIZE = 64
-HIDDEN_STATE_SIZE = [200, 100, 40]
+HIDDEN_STATE_SIZE = [200, 100, H1_UNITS]
 NUM_LSTM_LAYERS = 3
 NUM_EPOCHS = 100
 
@@ -20,7 +21,7 @@ def multi_lstm_model():
     return tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
 
 
-Seqs = tf.placeholder(tf.float32, [BATCH_SIZE, MAX_SEQUENCE_LENGTH, STATEMENT_DIMENSION])
+Seqs = tf.placeholder(tf.float32, [BATCH_SIZE, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
 Mats = tf.placeholder(tf.float32, [BATCH_SIZE, H1_UNITS, H1_UNITS])
 
 lstm_model = multi_lstm_model()

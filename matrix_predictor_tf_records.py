@@ -1,30 +1,40 @@
-# 1) train a model that reads in an AST (as DFS sequence) and then outputs a matrix
-# 2) one way to approach this is by only taking the last output of the RNN......
-
-# 3) what form is the data in? (filename=id --> Matrix, asts[id] = AST)
-#   (Matrix, AST) --> (Matrix, sequence_AST)
-# iterate over sequence_AST and feed it to the RNN. Save the last output of the RNN as the predicted matrix
-
-# I want to have data in batches that I can just feed to the model
-
 import os, sys
 import tensorflow as tf
-from brians_code import ast_to_sequence, MAX_SEQUENCE_LENGTH, STATEMENT_DIMENSION
+from ast_tokenizer import ast_tokenizer as ast_to_sequence, NUM_TOKENS as TOKEN_DIMENSIONS
 
 from matrix_learner import H1_UNITS
 from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR
 
 
 TF_RECORD_FILE = "Datasets/Hour of Code/matrix_predictor.tfrecord"
+MAX_SEQUENCE_LENGTH = 20
 
 
 def tf_record_parser(record):
+    '''
+    Extracts the token sequence and program matrix features from the tfrecord.
+    Ads padding to the token sequence so that it is of length MAX_SEQUENCE_LENGTH.
+    Flattens the matrix to 1-D (so that it is the same dimensions as the output of the
+    multi-LSTM RNN model.
+    Assumes the dimensions of the sequence stored in the matrix are seq_len x token_dim.
+    :param record: a tfrecord
+    :return: returns the sequence of dimensions MAX_SEQUENCE_LENGTH x TOKEN_DIMENSIONS
+    and returns the flattened matrix which of dimensions H1_UNITS x 1
+    '''
     keys_to_features = {
-        "sequence": tf.FixedLenFeature([STATEMENT_DIMENSION, MAX_SEQUENCE_LENGTH], tf.float32),
+        "sequence": tf.FixedLenFeature([TOKEN_DIMENSIONS, MAX_SEQUENCE_LENGTH], tf.float32),
         "matrix": tf.FixedLenFeature([H1_UNITS, H1_UNITS], tf.float32),
     }
+
     parsed = tf.parse_single_example(record, keys_to_features)
-    return parsed['sequence'], parsed['matrix']
+    seq = parsed['sequence']
+    amount_padding = MAX_SEQUENCE_LENGTH - tf.shape(seq)[0]
+    padding = tf.constant([[0, amount_padding], [0, 0]])
+    padded_seq = tf.pad(seq, padding, "CONSTANT", constant_values=0)
+
+    mat = parsed['matrix']
+    flattened_mat = tf.reshape(mat, [-1])
+    return padded_seq, flattened_mat
 
 
 def _floats_feature(value):
