@@ -46,8 +46,10 @@ def ast_tokenizer(ast):
     return token_list
 
 
-def vectorize_token_list(token_list):
+def vectorize_token_list(ast):
+    token_list = ast_tokenizer(ast)
     return np.array([vectorize_token(token) for token in token_list])
+
 
 
 def vectorize_token(token):

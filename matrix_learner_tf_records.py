@@ -9,7 +9,7 @@ PRECONDITION = "precond"
 POSTCONDITION = "postcond"
 AST = "ast"
 
-HOARE_TRIPLES_DIR = "Datasets/hour_of_code/data/hoare_triples"
+HOARE_TRIPLES_DIR = "Datasets/hour_of_code/data/example"
 INTERMEDIATE_DIR = "Datasets/hour_of_code/data/intermediate"
 TF_RECORDS_DIR = "Datasets/hour_of_code/data/tfrecords"
 MATRICES_DIR = "Datasets/hour_of_code/data/ast_matrices"

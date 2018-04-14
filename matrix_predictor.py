@@ -1,57 +1,73 @@
-# 1) train a model that reads in an AST (as DFS sequence) and then outputs a matrix
-# 2) one way to approach this is by only taking the last output of the RNN......
-
-# 3) what form is the data in? (filename=id --> Matrix, asts[id] = AST)
-#   (Matrix, AST) --> (Matrix, sequence_AST)
-# iterate over sequence_AST and feed it to the RNN. Save the last output of the RNN as the predicted matrix
-
-# I want to have data in batches that I can just feed to the model
-
-import os, sys
 import tensorflow as tf
-from ast_tokenizer import ast_tokenizer, MAX_SEQUENCE_LENGTH, STATEMENT_DIMENSION
 
-from matrix_learner import H1_UNITS
-from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR
-
-
-TF_RECORD_FILE = "Datasets/hour_of_code/matrix_predictor.tfrecord"
+from matrix_predictor_tf_records import TF_RECORD_TRAIN, TF_RECORD_EVAL, TF_RECORD_TEST, tf_record_parser, H1_UNITS, MAX_SEQUENCE_LENGTH
+from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 
 
-def cond_tf_record_parser(record):
-    keys_to_features = {
-        "sequence": tf.FixedLenFeature([STATEMENT_DIMENSION, MAX_SEQUENCE_LENGTH], tf.float32),
-        "matrix": tf.FixedLenFeature([H1_UNITS, H1_UNITS], tf.float32),
-    }
-    parsed = tf.parse_single_example(record, keys_to_features)
-    return parsed['precond'], parsed['postcond']
+BATCH_SIZE = 64
+MODEL_OUTPUT_DIM = H1_UNITS**2
+HIDDEN_STATE_SIZE = [4*MODEL_OUTPUT_DIM, 2*MODEL_OUTPUT_DIM, MODEL_OUTPUT_DIM]
+NUM_EPOCHS = 100
+
+data_iter_train = tf.data.TFRecordDataset(TF_RECORD_TRAIN)\
+            .map(tf_record_parser)\
+            .batch(BATCH_SIZE)\
+            .make_initializable_iterator()
+sequences_train, matrices_train = data_iter_train.get_next()
+
+data_iter_eval = tf.data.TFRecordDataset(TF_RECORD_EVAL)\
+            .map(tf_record_parser)\
+            .batch(BATCH_SIZE)\
+            .make_initializable_iterator()
+sequences_eval, matrices_eval = data_iter_eval.get_next()
+
+data_iter_test = tf.data.TFRecordDataset(TF_RECORD_TEST)\
+            .map(tf_record_parser)\
+            .batch(BATCH_SIZE)\
+            .make_initializable_iterator()
+sequences_test, matrices_test = data_iter_test.get_next()
 
 
-def _floats_feature(value):
-    return tf.train.Feature(float_list=tf.train.FloatList(value=value))
+def multi_lstm_model():
+    cells = [tf.nn.rnn_cell.BasicLSTMCell(size, state_is_tuple=True) for size in HIDDEN_STATE_SIZE]
+    return tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
 
 
-def write_to_tf_record(writer, sequence, matrix):
-    feature = {
-        'sequence': _floats_feature(sequence),
-        'matrix': _floats_feature(matrix),
-    }
-    example = tf.train.Example(features=tf.train.Features(feature=feature))
-    writer.write(example.SerializeToString())
+Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
+Mats = tf.placeholder(tf.float32, [None, H1_UNITS**2])
 
+lstm_model = multi_lstm_model()
+output, state = tf.nn.dynamic_rnn(lstm_model, Seqs, dtype=tf.float32)
+predicted_matrices = tf.unstack(tf.gather(output, [MAX_SEQUENCE_LENGTH - 1], axis=1), axis=1)[0]
 
-if __name__ == "main":
-    ast_to_id, asts = parse_ast_data()
-    writer = tf.python_io.TFRecordWriter(TF_RECORD_FILE)
-    for id in range(len(asts)):
-        tf.reset_default_graph()
-        matrix = tf.get_variable("linear_map", shape=[H1_UNITS, H1_UNITS])
-        matrix_file_path = os.path.join(MATRICES_DIR, "{}.ckpt".format(id))
-        saver = tf.train.Saver()
-        with tf.Session() as sess:
-            saver.restore(sess, matrix_file_path)
-            var_mat = matrix.eval()
-            ast_seq = ast_tokenizer(asts[id])
-            write_to_tf_record(writer, ast_seq, var_mat)
-    writer.close()
-    sys.stdout.flush()
+loss = tf.losses.mean_squared_error(Mats, predicted_matrices)
+optimizer = tf.train.AdamOptimizer().minimize(loss)
+
+init = tf.global_variables_initializer()
+with tf.Session() as sess:
+    sess.run(init)
+    for epoch in range(NUM_EPOCHS):
+        sess.run(data_iter_train.initializer)
+        while True:
+            try:
+                _, train_loss_val = sess.run([optimizer, loss], feed_dict={
+                    Seqs: sess.run(sequences_train),
+                    Mats: sess.run(matrices_train)
+                })
+                print('Epoch {}: Minibatch Loss: {}'.format(epoch, train_loss_val))
+            except tf.errors.OutOfRangeError:
+                break
+            except tf.errors.InvalidArgumentError:
+                break  # typically happens when there isn't enough data for a given AST
+        sess.run(data_iter_eval.initializer)
+        eval_loss_val = sess.run([loss], feed_dict={
+            Seqs: sess.run(sequences_eval),
+            Mats: sess.run(matrices_eval)
+        })
+        print('Epoch %i: Evaluation Loss: %f ####################################################' % (
+        epoch, eval_loss_val[0]))
+test_loss_val = sess.run([loss], feed_dict={
+    Seqs: sess.run(sequences_train),
+    Mats: sess.run(matrices_test)
+})
+print('Test Loss: %f ####################################################' % test_loss_val[0])
