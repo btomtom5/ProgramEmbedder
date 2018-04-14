@@ -8,11 +8,11 @@ COND_FEATURE_LENGTH = 390
 PRECONDITION = "precond"
 POSTCONDITION = "postcond"
 
-DATA_DIRECTORY = "Datasets/Hour of Code/hoare_triples"
+DATA_DIRECTORY = "Datasets/hour_of_code/hoare_triples"
 
-TRAIN_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/train.tfrecords"
-VAL_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/val.tfrecords"
-TEST_TF_RECORDS_FILE = "Datasets/Hour of Code/tfrecords/test.tfrecords"
+TRAIN_TF_RECORDS_FILE = "Datasets/hour_of_code/tfrecords/train.tfrecords"
+VAL_TF_RECORDS_FILE = "Datasets/hour_of_code/tfrecords/val.tfrecords"
+TEST_TF_RECORDS_FILE = "Datasets/hour_of_code/tfrecords/test.tfrecords"
 
 
 def write_condition_to_tf_record(cond, writer):

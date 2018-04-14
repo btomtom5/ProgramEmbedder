@@ -16,8 +16,41 @@ BATCH_SIZE = 3
 NUM_EPOCHS = 60
 SHUFFLE_BUFFER_SIZE = 100
 
-for root, dirs, files in os.walk(TF_RECORDS_DIR):
+
+def encoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
+    return layer_1
+
+
+def decoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
+    return layer_1
+
+
+def linear_map(x):
+    transform = tf.matmul(x, weights['linear_map'])
+    return transform
+
+    # Construct model
+
+
+P = tf.placeholder(tf.float32, [None, INPUT_UNITS])
+Q = tf.placeholder(tf.float32, [None, INPUT_UNITS])
+
+autoencoder_op = decoder(encoder(P))
+encoder_op = encoder(P)
+linear_op = linear_map(encoder_op)
+decoder_op = decoder(linear_op)
+
+P_true, P_pred = P, autoencoder_op
+Q_true, Q_pred = Q, decoder_op
+
+
+for _, _, files in os.walk(TF_RECORDS_DIR):
     for file in files:
+        # TFDatasets here doesn't need to be created for every iteration of the
+        # for loop. The directory can be replaced with tf.placeholders and
+        # those placeholders can be replaced during a tf.session.run(_, input)
         tf_record_path = os.path.join(TF_RECORDS_DIR, file)
         data_iter = tf.data.TFRecordDataset(tf_record_path)\
             .map(cond_tf_record_parser)\
@@ -27,44 +60,18 @@ for root, dirs, files in os.walk(TF_RECORDS_DIR):
 
         ast_to_id, asts = parse_ast_data()
 
+        # new weights are defined for the autoenc for each ast
+        # linear maps are meaningless when the autoenc changes at each time step.
         weights = {
             'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS]), name="encoder_h1"),
             'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS]), name='linear_map'),
-            'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS]), name='decoder_h1'),
+            'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS]), name='decoder_h1')
         }
 
         biases = {
             'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS]), name='encoder_b1'),
             'decoder_b1': tf.Variable(tf.random_normal([INPUT_UNITS]), name='decoder_b1'),
         }
-
-
-        def encoder(x):
-            layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
-            return layer_1
-
-
-        def decoder(x):
-            layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
-            return layer_1
-
-
-        def linear_map(x):
-            transform = tf.matmul(x, weights['linear_map'])
-            return transform
-
-
-        # Construct model
-        P = tf.placeholder(tf.float32, [None, INPUT_UNITS])
-        Q = tf.placeholder(tf.float32, [None, INPUT_UNITS])
-
-        autoencoder_op = decoder(encoder(P))
-        encoder_op = encoder(P)
-        linear_op = linear_map(encoder_op)
-        decoder_op = decoder(linear_op)
-
-        P_true, P_pred = P, autoencoder_op
-        Q_true, Q_pred = Q, decoder_op
 
         auto_loss = tf.reduce_mean(tf.pow(P_true - P_pred, 2))
         end_to_end_loss = tf.losses.sigmoid_cross_entropy(Q_true, Q_pred)

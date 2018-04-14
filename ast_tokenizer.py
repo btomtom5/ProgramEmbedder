@@ -8,12 +8,15 @@ from Datasets.hour_of_code.tokens import TOKENS_ENUM, NUM_TOKENS
 # if else | while loop | for loop |
 # The set of numerical transformations?
 
+# TODO set this with the real values or it will break.
+MAX_SEQUENCE_LENGTH, STATEMENT_DIMENSION = 100, 20
+
 
 def ast_tokenizer(ast):
     # If non-terminal
     token_list = []
     if is_placeholder(ast):
-        token_list.append("begin_"+ ast["type"])
+        token_list.append("begin_" + ast["type"])
         if "children" in ast:
             for sub_ast in ast["children"]:
                 token_list += ast_tokenizer(sub_ast)
@@ -54,12 +57,10 @@ def vectorize_token(token):
 
 
 def test_tokenizer(filepath):
+    # TODO add some guarantees about the conversion from token to vector.
     with open(filepath, "r") as file:
         ast = json.load(file)
         token_list = ast_tokenizer(ast)
-
-    print(token_list)
-    print(vectorize_token_list(token_list))
 
     return token_list
 

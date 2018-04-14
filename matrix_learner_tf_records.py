@@ -18,6 +18,7 @@ AST_DATA_FILE = "Datasets/hour_of_code/data/ast_data/ast_to_id.txt"
 
 def parse_ast_data():
     with open(AST_DATA_FILE, 'r') as f:
+        # file has two different data structures in it
         ast_to_id = json.loads(f.readline())
         asts = json.loads(f.readline())
     return ast_to_id, asts

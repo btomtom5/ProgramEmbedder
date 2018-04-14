@@ -9,13 +9,13 @@
 
 import os, sys
 import tensorflow as tf
-from brians_code import ast_to_sequence, MAX_SEQUENCE_LENGTH, STATEMENT_DIMENSION
+from ast_tokenizer import ast_tokenizer, MAX_SEQUENCE_LENGTH, STATEMENT_DIMENSION
 
 from matrix_learner import H1_UNITS
 from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR
 
 
-TF_RECORD_FILE = "Datasets/Hour of Code/matrix_predictor.tfrecord"
+TF_RECORD_FILE = "Datasets/hour_of_code/matrix_predictor.tfrecord"
 
 
 def cond_tf_record_parser(record):
@@ -51,7 +51,7 @@ if __name__ == "main":
         with tf.Session() as sess:
             saver.restore(sess, matrix_file_path)
             var_mat = matrix.eval()
-            ast_seq = ast_to_sequence(asts[id])
+            ast_seq = ast_tokenizer(asts[id])
             write_to_tf_record(writer, ast_seq, var_mat)
     writer.close()
     sys.stdout.flush()
