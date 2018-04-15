@@ -5,7 +5,7 @@ from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 
 
 BATCH_SIZE = 64
-MODEL_OUTPUT_DIM = H1_UNITS**2
+MODEL_OUTPUT_DIM = TOKEN_DIMENSION
 HIDDEN_STATE_SIZE = [4*MODEL_OUTPUT_DIM, 2*MODEL_OUTPUT_DIM, MODEL_OUTPUT_DIM]
 NUM_EPOCHS = 100
 
@@ -37,10 +37,10 @@ Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
 Mats = tf.placeholder(tf.float32, [None, H1_UNITS**2])
 
 lstm_model = multi_lstm_model()
-output, state = tf.nn.dynamic_rnn(lstm_model, Seqs, dtype=tf.float32)
-predicted_matrices = tf.unstack(tf.gather(output, [MAX_SEQUENCE_LENGTH - 1], axis=1), axis=1)[0]
+output, state = tf.nn.dynamic_rnn(lstm_model, Mats, dtype=tf.float32)
+predicted_asts = tf.unstack(tf.gather(output, [MAX_SEQUENCE_LENGTH - 1], axis=1), axis=1)[0]
 
-loss = tf.losses.mean_squared_error(Mats, predicted_matrices)
+loss = tf.losses.mean_squared_error(Seqs, predicted_matrices)
 optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 init = tf.global_variables_initializer()
