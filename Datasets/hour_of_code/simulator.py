@@ -12,6 +12,7 @@ pp = pprint.PrettyPrinter(indent=4)
 
 
 ################################## GENERATE THE TWO WORLD INSTANCES #############################
+
 def create_small_world():
     small_world = World(8, 8)
 
@@ -109,7 +110,7 @@ def generate_datasets():
     dataset_count = 0
 
     ################################## PROCESS THE HOC 18 DATASET #################################
-
+    print("length of the hoc 18 paths: %s".format(len(hoc18_paths)))
     for program_path in hoc18_paths:
         ast = json.load(open(program_path))
         ast_name = program_path.split("/")[-1].split(".")[0]

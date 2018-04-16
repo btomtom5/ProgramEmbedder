@@ -7,12 +7,13 @@ from matrix_learner_tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH
 AST_INDEX = "ast"
 CONDITION = "cond"
 
+# <<<<<<<<<<<<<<<<<<<<<<<<<< TODO: CHANGE EPOCHS + BATCH SIZE BACK TO AN APPROPRIATE AMOUNT >>>>>>>>>>>>>>
 H1_UNITS = 15
 LEARNING_RATE = 1e-2
 REGULARIZER_COEFF = 0.1
 
 BATCH_SIZE = 32
-NUM_EPOCHS = 100
+NUM_EPOCHS = 1
 SHUFFLE_BUFFER_SIZE = 100
 
 if __name__ == "__main__":
