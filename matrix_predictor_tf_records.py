@@ -5,10 +5,14 @@ from ast_tokenizer import vectorize_token_list as ast_to_sequence, NUM_TOKENS as
 from matrix_learner import H1_UNITS
 from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR
 
+# <<<<<<<<<<<<<<<<<<<<<<<<<< TODO: CHANGE FILES BACK TO FULL DATA SET >>>>>>>>>>>>>>
+# TF_RECORD_TRAIN = "Datasets/hour_of_code/data/tfrecords/mat_pred_train.tfrecord"
+# TF_RECORD_EVAL = "Datasets/hour_of_code/data/tfrecords/mat_pred_eval.tfrecord"
+# TF_RECORD_TEST = "Datasets/hour_of_code/data/tfrecords/mat_pred_test.tfrecord"
 
-TF_RECORD_TRAIN = "Datasets/hour_of_code/data/tfrecords/mat_pred_train.tfrecord"
-TF_RECORD_EVAL = "Datasets/hour_of_code/data/tfrecords/mat_pred_eval.tfrecord"
-TF_RECORD_TEST = "Datasets/hour_of_code/data/tfrecords/mat_pred_test.tfrecord"
+TF_RECORD_TRAIN = "Datasets/hour_of_code/dev_data/tfrecords/mat_pred_train.tfrecord"
+TF_RECORD_EVAL = "Datasets/hour_of_code/dev_data/tfrecords/mat_pred_eval.tfrecord"
+TF_RECORD_TEST = "Datasets/hour_of_code/dev_data/tfrecords/mat_pred_test.tfrecord"
 
 MAX_SEQUENCE_LENGTH = 20
 

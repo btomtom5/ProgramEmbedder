@@ -14,7 +14,7 @@ def is_placeholder(ast):
 
 def is_terminal_statement(ast):
     return (ast["type"] == "turnLeft" or ast["type"] == "turnRight" or
-            ast["type"] == "maze_forward")
+            ast["type"] == "maze_moveForward")
 
 
 
