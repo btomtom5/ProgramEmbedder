@@ -2,17 +2,21 @@
 
 # remove all the old data
 
-rm -r data/hoare_triples
-rm -r data/intermediate
-rm -r data/tfrecords
-rm -r data/ast_matrices
-rm data/ast_to_id.txt
+DIR_PATH=$(dirname "$0")
+
+echo $DIR_PATH
+
+rm -r $DIR_PATH/data/hoare_triples
+rm -r $DIR_PATH/data/intermediate
+rm -r $DIR_PATH/data/tfrecords
+rm -r $DIR_PATH/data/ast_matrices
+rm $DIR_PATH/data/ast_to_id.txt
 
 # create the data directories
 
-mkdir data/hoare_triples
-mkdir data/hoare_triples/hoc4
-mkdir data/hoare_triples/hoc18
-mkdir data/intermediate
-mkdir data/tfrecords
-mkdir data/ast_matrices
+mkdir $DIR_PATH/data/hoare_triples
+mkdir $DIR_PATH/data/hoare_triples/hoc4
+mkdir $DIR_PATH/data/hoare_triples/hoc18
+mkdir $DIR_PATH/data/intermediate
+mkdir $DIR_PATH/data/tfrecords
+mkdir $DIR_PATH/data/ast_matrices
