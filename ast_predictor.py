@@ -31,6 +31,7 @@ sequences_test, matrices_test = data_iter_test.get_next()
 def multi_lstm_model():
     cells = [tf.nn.rnn_cell.BasicLSTMCell(size, state_is_tuple=True) for size in HIDDEN_STATE_SIZE]
     return tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
+<<<<<<< HEAD
     
 def matrix_replicates(matrices):
     '''matrices.shape == [num_matrices, H1_UNITS**2]
@@ -63,6 +64,7 @@ with tf.Session() as sess:
             try:
                 # TODO: matrices_train is [BATCH_SIZE x H1**2] it needs to be [BATCH_SIZE x MAX_SEQUENCE_LENGTH x H1**2]
                 #       the way we'll do this is by replicating 
+
                 _, train_loss_val = sess.run([optimizer, loss], feed_dict={
                     Seqs: sess.run(sequences_train),
                     Mats: sess.run(matrices_train)
