@@ -31,16 +31,27 @@ sequences_test, matrices_test = data_iter_test.get_next()
 def multi_lstm_model():
     cells = [tf.nn.rnn_cell.BasicLSTMCell(size, state_is_tuple=True) for size in HIDDEN_STATE_SIZE]
     return tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
+    
+def matrix_replicates(matrices):
+    '''matrices.shape == [num_matrices, H1_UNITS**2]
+    returns: [num_matrices, MAX_SEQUENCE_LENGTH, H1_UNITS**2]
+    '''
+    num_matrices = matrices.shape[0]
+    return tf.transpose(
+        tf.reshape(
+                tf.tile(matrices, [1, MAX_SEQUENCE_LENGTH]),
+                [num_matrices,  H1_UNITS**2, MAX_SEQUENCE_LENGTH,]),
+        [0, 2, 1])
 
 
 Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
-Mats = tf.placeholder(tf.float32, [None, H1_UNITS**2])
+Mats = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, H1_UNITS**2])
 
 lstm_model = multi_lstm_model()
 output, state = tf.nn.dynamic_rnn(lstm_model, Mats, dtype=tf.float32)
 predicted_asts = tf.unstack(output, axis=1)
 
-loss = tf.losses.mean_squared_error(Seqs, predicted_matrices)
+loss = tf.losses.mean_squared_error(Seqs, predicted_asts)
 optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 init = tf.global_variables_initializer()
@@ -50,6 +61,8 @@ with tf.Session() as sess:
         sess.run(data_iter_train.initializer)
         while True:
             try:
+                # TODO: matrices_train is [BATCH_SIZE x H1**2] it needs to be [BATCH_SIZE x MAX_SEQUENCE_LENGTH x H1**2]
+                #       the way we'll do this is by replicating 
                 _, train_loss_val = sess.run([optimizer, loss], feed_dict={
                     Seqs: sess.run(sequences_train),
                     Mats: sess.run(matrices_train)
