@@ -31,7 +31,6 @@ sequences_test, matrices_test = data_iter_test.get_next()
 def multi_lstm_model():
     cells = [tf.nn.rnn_cell.BasicLSTMCell(size, state_is_tuple=True) for size in HIDDEN_STATE_SIZE]
     return tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
-<<<<<<< HEAD
     
 def matrix_replicates(matrices):
     '''matrices.shape == [num_matrices, H1_UNITS**2]
