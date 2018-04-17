@@ -12,8 +12,6 @@ python3 matrix_learner_tf_records.py
 
 python3 matrix_learner.py
 
-python3 matrix_learner_tf_records.py
-
 python3 matrix_predictor_tf_records.py
 
 python3 matrix_predictor.py
