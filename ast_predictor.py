@@ -48,7 +48,7 @@ Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
 Mats = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, H1_UNITS**2])
 
 lstm_model = multi_lstm_model()
-output, state = tf.nn.dynamic_rnn(lstm_model, Mats, dtype=tf.float32)
+output, state = tf.nn.dynamic_rnn(lstm_model, matrix_replicates(Mats), dtype=tf.float32)
 predicted_asts = tf.unstack(output, axis=1)
 
 loss = tf.losses.mean_squared_error(Seqs, predicted_asts)
