@@ -9,21 +9,16 @@ PRECONDITION = "precond"
 POSTCONDITION = "postcond"
 AST = "ast"
 
-# HOARE_TRIPLES_DIR = "Datasets/hour_of_code/data/example"
-# INTERMEDIATE_DIR = "Datasets/hour_of_code/data/intermediate"
-# TF_RECORDS_DIR = "Datasets/hour_of_code/data/tfrecords"
-# MATRICES_DIR = "Datasets/hour_of_code/data/ast_matrices"
-# AST_DATA_FILE = "Datasets/hour_of_code/data/ast_data/ast_to_id.txt"
-
-HOARE_TRIPLES_DIR = "Datasets/hour_of_code/dev_data"
-INTERMEDIATE_DIR = "Datasets/hour_of_code/dev_data/intermediate"
-TF_RECORDS_DIR = "Datasets/hour_of_code/dev_data/tfrecords"
-MATRICES_DIR = "Datasets/hour_of_code/dev_data/ast_matrices"
-AST_DATA_FILE = "Datasets/hour_of_code/dev_data/ast_to_id.txt"
+DATA_DIR = None
+HOARE_TRIPLES_DIR = "Datasets/hour_of_code/%s"
+INTERMEDIATE_DIR = "Datasets/hour_of_code/%s/intermediate" 
+TF_RECORDS_DIR = "Datasets/hour_of_code/%s/tfrecords" 
+MATRICES_DIR = "Datasets/hour_of_code/%s/ast_matrices" 
+AST_DATA_FILE = "Datasets/hour_of_code/%s/ast_to_id.txt" 
 
 
-def parse_ast_data():
-    with open(AST_DATA_FILE, 'r') as f:
+def parse_ast_data(ast_data_file):
+    with open(ast_data_file, 'r') as f:
         # file has two different data structures in it
         ast_to_id = json.loads(f.readline())
         asts = json.loads(f.readline())
@@ -75,14 +70,18 @@ def write_to_tf_record(tf_record_file, inter_file):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        DATA_DIR = sys.argv[1]
+    else:
+        raise Exception("Usage Error: python3 script_name.py <data | dev_data>")
+
     ast_to_id = {}
     asts = []
 
     # Put this whole block into a function or label with comments
-    for root, dirs, files in os.walk(HOARE_TRIPLES_DIR):
+    for root, dirs, files in os.walk(HOARE_TRIPLES_DIR % DATA_DIR):
         for file in files:
             if file.endswith(".json"):
-                print("Json file: {}".format(file))
                 json_file_path = os.path.join(root, file)
                 with open(json_file_path, 'r') as json_file:
                     data = json.load(json_file)
@@ -93,20 +92,20 @@ if __name__ == "__main__":
                         asts.append(ast_string)
                         ast_to_id[ast_string] = ast_id
                     inter_name = "{}.inter".format(ast_to_id[ast_string])
-                    inter_file = os.path.join(INTERMEDIATE_DIR, inter_name)
+                    inter_file = os.path.join(INTERMEDIATE_DIR % DATA_DIR, inter_name)
                     write_to_intermediate_file(inter_file, data[PRECONDITION], data[POSTCONDITION])
 
     # Put this whole block into a function or label with comments
-    for root, dirs, files in os.walk(INTERMEDIATE_DIR):
+    for root, dirs, files in os.walk(INTERMEDIATE_DIR % DATA_DIR):
         for file in files:
             print("tfrecord: {}".format(file))
             ast_id, _ = os.path.splitext(file)
             ast_id = os.path.basename(ast_id)
-            file_path = os.path.join(INTERMEDIATE_DIR, file)
+            file_path = os.path.join(INTERMEDIATE_DIR % DATA_DIR, file)
             tf_record_name = "{}.tfrecord".format(ast_id)
-            tf_record_file = os.path.join(TF_RECORDS_DIR, tf_record_name)
+            tf_record_file = os.path.join(TF_RECORDS_DIR % DATA_DIR, tf_record_name)
             write_to_tf_record(tf_record_file, file_path)
 
-    with open(AST_DATA_FILE, 'w+') as ast_file:
+    with open(AST_DATA_FILE % DATA_DIR, 'w+') as ast_file:
         ast_file.write("{}\n".format(json.dumps(ast_to_id)))
         ast_file.write("{}\n".format(json.dumps(asts)))

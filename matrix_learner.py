@@ -1,7 +1,9 @@
 import os
+import sys
 
 import tensorflow as tf
-from matrix_learner_tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS, parse_ast_data, TF_RECORDS_DIR, MATRICES_DIR
+from matrix_learner_tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS,\
+    parse_ast_data, TF_RECORDS_DIR, MATRICES_DIR, AST_DATA_FILE
 
 
 AST_INDEX = "ast"
@@ -12,21 +14,30 @@ H1_UNITS = 15
 LEARNING_RATE = 1e-2
 REGULARIZER_COEFF = 0.1
 
-BATCH_SIZE = 32
-NUM_EPOCHS = 1
+BATCH_SIZE = None
+NUM_EPOCHS = None
 SHUFFLE_BUFFER_SIZE = 100
 
+DATA_DIR = None
+
 if __name__ == "__main__":
-    for root, dirs, files in os.walk(TF_RECORDS_DIR):
+    if len(sys.argv) > 3:
+        DATA_DIR = sys.argv[1]
+        NUM_EPOCHS = int(sys.argv[2])
+        BATCH_SIZE = int(sys.argv[3])
+    else:
+        raise Exception("Usage Error: python3 script_name.py <data | dev_data>")
+
+    for root, dirs, files in os.walk(TF_RECORDS_DIR % DATA_DIR):
         for file in files:
-            tf_record_path = os.path.join(TF_RECORDS_DIR, file)
+            tf_record_path = os.path.join(TF_RECORDS_DIR % DATA_DIR, file)
             data_iter = tf.data.TFRecordDataset(tf_record_path)\
                 .map(cond_tf_record_parser)\
                 .batch(BATCH_SIZE)\
                 .make_initializable_iterator()
             preconds, postconds = data_iter.get_next()
 
-            ast_to_id, asts = parse_ast_data()
+            ast_to_id, asts = parse_ast_data(AST_DATA_FILE % DATA_DIR)
 
             weights = {
                 'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS]), name="encoder_h1"),
@@ -94,7 +105,7 @@ if __name__ == "__main__":
                         except tf.errors.InvalidArgumentError:
                             break  # typically happens when there isn't enough data for a given AST
                 ast_id, _ = os.path.splitext(os.path.basename(file))
-                program_matrix_file = os.path.join(MATRICES_DIR, "{}.ckpt".format(ast_id))
+                program_matrix_file = os.path.join(MATRICES_DIR % DATA_DIR, "{}.ckpt".format(ast_id))
                 save_path = saver.save(sess, program_matrix_file)
             print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             # write matrix program matrix to file
