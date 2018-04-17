@@ -77,12 +77,12 @@ def create_large_game(ast):
 ################################## PROCESS THE THE TWO HOC DATASETS #############################
 def generate_datasets():
     # list of hoc4 json files
-    hoc4_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/dev_data/hoc4/asts/*.json")
+    hoc4_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/data/hoc4/asts/*.json")
 
     total_games = 0
     total_successful = 0
 
-    hoare_path =  os.path.dirname(os.path.abspath(__file__)) + "/dev_data/hoare_triples/"
+    hoare_path =  os.path.dirname(os.path.abspath(__file__)) + "/data/hoare_triples/"
     dataset_count = 0
 
     ################################## PROCESS THE HOC 4 DATASET #################################
@@ -102,7 +102,7 @@ def generate_datasets():
     print("The percentage that is successful: ", total_successful / total_games)
 
     ## list of hoc18 json files
-    hoc18_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/dev_data/hoc18/asts/*.json")
+    hoc18_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/data/hoc18/asts/*.json")
 
     total_games = 0
     total_successful = 0

@@ -77,6 +77,8 @@ def write_to_tf_record(tf_record_file, inter_file):
 if __name__ == "__main__":
     ast_to_id = {}
     asts = []
+
+    # Put this whole block into a function or label with comments
     for root, dirs, files in os.walk(HOARE_TRIPLES_DIR):
         for file in files:
             if file.endswith(".json"):
@@ -94,6 +96,7 @@ if __name__ == "__main__":
                     inter_file = os.path.join(INTERMEDIATE_DIR, inter_name)
                     write_to_intermediate_file(inter_file, data[PRECONDITION], data[POSTCONDITION])
 
+    # Put this whole block into a function or label with comments
     for root, dirs, files in os.walk(INTERMEDIATE_DIR):
         for file in files:
             print("tfrecord: {}".format(file))

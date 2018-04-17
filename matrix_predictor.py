@@ -44,6 +44,7 @@ loss = tf.losses.mean_squared_error(Mats, predicted_matrices)
 optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 init = tf.global_variables_initializer()
+saver = tf.train.Saver()
 with tf.Session() as sess:
     sess.run(init)
     for epoch in range(NUM_EPOCHS):

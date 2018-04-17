@@ -10,9 +10,9 @@ from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR
 # TF_RECORD_EVAL = "Datasets/hour_of_code/data/tfrecords/mat_pred_eval.tfrecord"
 # TF_RECORD_TEST = "Datasets/hour_of_code/data/tfrecords/mat_pred_test.tfrecord"
 
-TF_RECORD_TRAIN = "Datasets/hour_of_code/dev_data/tfrecords/mat_pred_train.tfrecord"
-TF_RECORD_EVAL = "Datasets/hour_of_code/dev_data/tfrecords/mat_pred_eval.tfrecord"
-TF_RECORD_TEST = "Datasets/hour_of_code/dev_data/tfrecords/mat_pred_test.tfrecord"
+TF_RECORD_TRAIN = "Datasets/hour_of_code/data/tfrecords/mat_pred_train.tfrecord"
+TF_RECORD_EVAL = "Datasets/hour_of_code/data/tfrecords/mat_pred_eval.tfrecord"
+TF_RECORD_TEST = "Datasets/hour_of_code/data/tfrecords/mat_pred_test.tfrecord"
 
 MAX_SEQUENCE_LENGTH = 20
 
