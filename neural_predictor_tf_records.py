@@ -16,9 +16,9 @@ TF_RECORDS_TEST = "Datasets/hour_of_code/dev_data/hoare_triples_tf_records/test.
 
 def tf_record_parser(serialized_example):
     keys_to_features = {
-        "sequence": tf.FixedLenFeature([MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION], tf.int64),
-        "precond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64),
-        "postcond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.int64),
+        "sequence": tf.FixedLenFeature([MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION], tf.float32),
+        "precond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.float32),
+        "postcond": tf.FixedLenFeature([COND_FEATURE_LENGTH], tf.float32),
     }
     parsed = tf.parse_single_example(serialized_example, keys_to_features)
     return parsed['sequence'], parsed['precond'], parsed['postcond']
@@ -37,9 +37,9 @@ def write_hoare_triple_to_tf_record(json_hoare, tf_writer):
                 # Features contains a map of string to Feature proto objects
                 feature={
                     # A Feature contains one of either a int64_list, float_list, or bytes_list
-                    'sequence': tf.train.Feature(int64_list=tf.train.Int64List(value=padded_sequence.flatten())),
-                    'precond': tf.train.Feature(int64_list=tf.train.Int64List(value=data[PRECONDITION])),
-                    'postcond': tf.train.Feature(int64_list=tf.train.Int64List(value=data[POSTCONDITION])),
+                    'sequence': tf.train.Feature(float_list=tf.train.FloatList(value=padded_sequence.flatten())),
+                    'precond': tf.train.Feature(float_list=tf.train.FloatList(value=data[PRECONDITION])),
+                    'postcond': tf.train.Feature(float_list=tf.train.FloatList(value=data[POSTCONDITION])),
                 }))
         # use the proto object to serialize the example to a string
         serialized = example.SerializeToString()

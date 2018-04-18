@@ -6,8 +6,8 @@ from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 from neural_predictor_tf_records import tf_record_parser, TF_RECORDS_TRAIN, TF_RECORDS_EVAL, TF_RECORDS_TEST
 
 
-NUM_EPOCHS = 100
-BATCH_SIZE = 32
+NUM_EPOCHS = 5
+BATCH_SIZE = 16
 LSTM_CELLS = [200, 100, 50]
 PREDICTED_NN_LAYERS = [COND_FEATURE_LENGTH, 100, 50, 25, COND_FEATURE_LENGTH]
 
@@ -21,12 +21,12 @@ Ast_Seqs_train, Ps_train, Qs_train = data_iter_train.get_next()
 data_iter_eval = tf.data.TFRecordDataset(TF_RECORDS_EVAL)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
-Ast_Seqs_eval, Ps_eval, Qs_eval = data_iter_train.get_next()
+Ast_Seqs_eval, Ps_eval, Qs_eval = data_iter_eval.get_next()
 
 data_iter_test = tf.data.TFRecordDataset(TF_RECORDS_TEST)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
-Ast_Seqs_test, Ps_test, Qs_test = data_iter_train.get_next()
+Ast_Seqs_test, Ps_test, Qs_test = data_iter_test.get_next()
 
 
 def multi_lstm_model():
@@ -61,18 +61,26 @@ def reshape_concatenated_weights_to_layers(concatenated_weights, preconds):
     '''
     start = 0
     end = 0
-    layer = tf.cast(preconds, dtype=tf.float32)
-    for i in range(1, len(PREDICTED_NN_LAYERS)):
+    layer = preconds
+    indeces = list(range(1, len(PREDICTED_NN_LAYERS)))
+    non_linear_transforms = [tf.nn.relu]*(len(PREDICTED_NN_LAYERS) - 2) + [tf.nn.sigmoid]
+    for i, transform in zip(indeces, non_linear_transforms):
         end += PREDICTED_NN_LAYERS[i-1]*PREDICTED_NN_LAYERS[i]
         weights = tf.reshape(
             tf.gather(concatenated_weights, list(range(start, end)), axis=1),
-            [PREDICTED_NN_LAYERS[i-1], PREDICTED_NN_LAYERS[i]]
+            [-1, PREDICTED_NN_LAYERS[i-1], PREDICTED_NN_LAYERS[i]]
         )
         start = end
         end += PREDICTED_NN_LAYERS[i]
-        biases = tf.gather(concatenated_weights, list(range(start, end)), axis=1)
-        layer = tf.nn.relu(tf.add(tf.matmul(layer, weights), biases))
-    return tf.nn.sigmoid(layer)
+        biases = tf.reshape(
+            tf.gather(concatenated_weights, list(range(start, end)), axis=1),
+            [-1, PREDICTED_NN_LAYERS[i]]
+        )
+        # tf.einsum refers to Einstein Summation notation. Here 'bi,bij->bj' refers
+        # to batch matrix multiplication.
+        layer = transform(tf.add(tf.einsum('bi,bij->bj', layer, weights), biases))
+        start = end
+    return layer
 
 
 # Define the model (in sequential order pretty much)
@@ -81,9 +89,9 @@ lstm_model = multi_lstm_model()
 all_outputs, _ = tf.nn.dynamic_rnn(lstm_model, Ast_Seqs, dtype=tf.float32)
 final_output = tf.unstack(tf.gather(all_outputs, [MAX_SEQUENCE_LENGTH - 1], axis=1), axis=1)[0]
 nn_as_vec = post_lstm_fc_layer(final_output)
-Ps = tf.placeholder(tf.int32, [None, COND_FEATURE_LENGTH])
+Ps = tf.placeholder(tf.float32, [None, COND_FEATURE_LENGTH])
 Qs_pred = reshape_concatenated_weights_to_layers(nn_as_vec, Ps)
-Qs = tf.placeholder(tf.int32, [None, COND_FEATURE_LENGTH])
+Qs = tf.placeholder(tf.float32, [None, COND_FEATURE_LENGTH])
 
 # TODO: define what accuracy means for Q_pred/Q
 loss = tf.losses.mean_squared_error(Qs, Qs_pred)
@@ -109,7 +117,7 @@ with tf.Session() as sess:
                 break  # typically happens when there isn't enough data for a given AST
         sess.run(data_iter_eval.initializer)
         eval_loss_val = sess.run([loss], feed_dict={
-            # evaluation set does not have batches, but placeholder requires batch size
+            # evaluation set does not have batches, but placeholder requires batch size tf.expand_dims(sequences_eval, axis=0)
             Ast_Seqs: sess.run(tf.expand_dims(Ast_Seqs_eval, axis=0)),
             Ps: sess.run(tf.expand_dims(Ps_eval, axis=0)),
             Qs: sess.run(tf.expand_dims(Qs_eval, axis=0)),
