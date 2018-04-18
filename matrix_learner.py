@@ -19,6 +19,8 @@ NUM_EPOCHS = None
 SHUFFLE_BUFFER_SIZE = 100
 
 DATA_DIR = None
+training_loss_log = []
+MATRIX_LEARNER_LOGS = "Datasets/hour_of_code/results/matrix_learner_log.txt"
 
 if __name__ == "__main__":
     if len(sys.argv) > 3:
@@ -99,6 +101,7 @@ if __name__ == "__main__":
                                 P: sess.run(preconds),
                                 Q: sess.run(postconds)
                             })
+                            training_loss_log.append((file, epoch, train_loss_val))
                             print('File: {} Epoch {}: Minibatch Loss: {}'.format(file, epoch, train_loss_val))
                         except tf.errors.OutOfRangeError:
                             break
@@ -109,3 +112,7 @@ if __name__ == "__main__":
                 save_path = saver.save(sess, program_matrix_file)
             print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             # write matrix program matrix to file
+
+    with open(MATRIX_LEARNER_LOGS, 'w') as file:
+        for record in training_loss_log:
+            file.write(str(record))

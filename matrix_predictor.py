@@ -11,6 +11,14 @@ MODEL_OUTPUT_DIM = H1_UNITS**2
 HIDDEN_STATE_SIZE = [4*MODEL_OUTPUT_DIM, 2*MODEL_OUTPUT_DIM, MODEL_OUTPUT_DIM]
 NUM_EPOCHS = None
 
+
+training_loss_log = []
+MATRIX_PREDICTOR_TRAIN_LOGS = "Datasets/hour_of_code/results/matrix_predictor_train_log.txt"
+evaluation_loss_log = []
+MATRIX_PREDICTOR_EVAL_LOGS = "Datasets/hour_of_code/results/matrix_predictor_eval_log.txt"
+test_loss_log = []
+MATRIX_PREDICTOR_TEST_LOGS = "Datasets/hour_of_code/results/matrix_predictor_test_log.txt"
+
 if __name__ == "__main__":
     if len(sys.argv) > 2:
         DATA_DIR = sys.argv[1]
@@ -65,6 +73,7 @@ with tf.Session() as sess:
                     Seqs: sess.run(sequences_train),
                     Mats: sess.run(matrices_train)
                 })
+                training_loss_log.append((epoch, train_loss_val))
                 print('Epoch {}: Minibatch Loss: {}'.format(epoch, train_loss_val))
             except tf.errors.OutOfRangeError:
                 break
@@ -77,6 +86,7 @@ with tf.Session() as sess:
             Seqs: sess.run(tf.expand_dims(sequences_eval, axis=0)),
             Mats: sess.run(tf.expand_dims(matrices_eval, axis=0))
         })
+        evaluation_loss_log.append((epoch, eval_loss_val[0]))
         print('Epoch %i: Evaluation Loss: %f ####################################################' % (
         epoch, eval_loss_val[0]))
     sess.run(data_iter_test.initializer)
@@ -86,4 +96,17 @@ with tf.Session() as sess:
         Seqs: sess.run(tf.expand_dims(sequences_test, axis=0)),
         Mats: sess.run(tf.expand_dims(matrices_test, axis=0))
     })
+    test_loss_log.append(test_loss_val[0])
     print('Test Loss: %f ####################################################' % test_loss_val[0])
+
+with open(MATRIX_PREDICTOR_TRAIN_LOGS, 'w') as file:
+    for record in training_loss_log:
+        file.write(str(record))
+
+with open(MATRIX_PREDICTOR_EVAL_LOGS, 'w') as file:
+    for record in evaluation_loss_log:
+        file.write(str(record))
+
+with open(MATRIX_PREDICTOR_TEST_LOGS, 'w') as file:
+    for record in test_loss_log:
+        file.write(str(record))
