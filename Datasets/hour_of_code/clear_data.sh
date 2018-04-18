@@ -1,22 +1,42 @@
 #!/bin/sh
 
-# remove all the old data
+data_dir=dev_data
+full_clean=false
 
-DIR_PATH=$(dirname "$0")
 
-echo $DIR_PATH
+while getopts ':cf:' opt; do
+    case $opt in
+        c)
+            full_clean=true
+            ;;
+        f)
+            data_dir=$OPTARG
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            ;;
+    esac
+done
 
-rm -r $DIR_PATH/data/hoare_triples
-rm -r $DIR_PATH/data/intermediate
-rm -r $DIR_PATH/data/tfrecords
-rm -r $DIR_PATH/data/ast_matrices
-rm $DIR_PATH/data/ast_to_id.txt
+
+DIR_PATH=$(dirname "$0")/${data_dir}
+
+if [ ${full_clean} == true ] ; then
+    echo "cleaning the hoare triples"
+    rm -r $DIR_PATH/hoare_triples
+    mkdir $DIR_PATH/hoare_triples
+
+    mkdir $DIR_PATH/hoare_triples/hoc4
+    mkdir $DIR_PATH/hoare_triples/hoc18
+fi
+
+rm -r $DIR_PATH/intermediate
+rm -r $DIR_PATH/tfrecords
+rm -r $DIR_PATH/ast_matrices
+rm $DIR_PATH/ast_to_id.txt
 
 # create the data directories
 
-mkdir $DIR_PATH/data/hoare_triples
-mkdir $DIR_PATH/data/hoare_triples/hoc4
-mkdir $DIR_PATH/data/hoare_triples/hoc18
-mkdir $DIR_PATH/data/intermediate
-mkdir $DIR_PATH/data/tfrecords
-mkdir $DIR_PATH/data/ast_matrices
+mkdir $DIR_PATH/intermediate
+mkdir $DIR_PATH/tfrecords
+mkdir $DIR_PATH/ast_matrices

@@ -3,18 +3,19 @@ import tensorflow as tf
 from ast_tokenizer import vectorize_token_list as ast_to_sequence, NUM_TOKENS as TOKEN_DIMENSIONS
 
 from matrix_learner import H1_UNITS
-from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR
+from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR, AST_DATA_FILE
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<< TODO: CHANGE FILES BACK TO FULL DATA SET >>>>>>>>>>>>>>
 # TF_RECORD_TRAIN = "Datasets/hour_of_code/data/tfrecords/mat_pred_train.tfrecord"
 # TF_RECORD_EVAL = "Datasets/hour_of_code/data/tfrecords/mat_pred_eval.tfrecord"
 # TF_RECORD_TEST = "Datasets/hour_of_code/data/tfrecords/mat_pred_test.tfrecord"
 
-TF_RECORD_TRAIN = "Datasets/hour_of_code/data/tfrecords/mat_pred_train.tfrecord"
-TF_RECORD_EVAL = "Datasets/hour_of_code/data/tfrecords/mat_pred_eval.tfrecord"
-TF_RECORD_TEST = "Datasets/hour_of_code/data/tfrecords/mat_pred_test.tfrecord"
+TF_RECORD_TRAIN = "Datasets/hour_of_code/%s/tfrecords/mat_pred_train.tfrecord"
+TF_RECORD_EVAL = "Datasets/hour_of_code/%s/tfrecords/mat_pred_eval.tfrecord"
+TF_RECORD_TEST = "Datasets/hour_of_code/%s/tfrecords/mat_pred_test.tfrecord"
 
 MAX_SEQUENCE_LENGTH = 20
+DATA_DIR = None
 
 
 def tf_record_parser(serialized_example):
@@ -57,12 +58,12 @@ def write_to_tf_record(writer, sequence, matrix):
     writer.write(serialized)
 
 
-def create_tf_record_from_ast_ids(ids, file_path):
-    writer = tf.python_io.TFRecordWriter(file_path)
+def create_tf_record_from_ast_ids(matrices_file_path, ids, write_file_path):
+    writer = tf.python_io.TFRecordWriter(write_file_path)
     for id in ids:
         tf.reset_default_graph()
         matrix = tf.get_variable("linear_map", shape=[H1_UNITS, H1_UNITS])
-        matrix_file_path = os.path.join(MATRICES_DIR, "{}.ckpt".format(id))
+        matrix_file_path = os.path.join(matrices_file_path, "{}.ckpt".format(id))
         saver = tf.train.Saver()
         with tf.Session() as sess:
             saver.restore(sess, matrix_file_path)
@@ -74,13 +75,18 @@ def create_tf_record_from_ast_ids(ids, file_path):
 
 
 if __name__ == "__main__":
-    ast_to_id, asts = parse_ast_data()
+    if len(sys.argv) > 1:
+        DATA_DIR = sys.argv[1]
+    else:
+        raise Exception("Usage Error: python3 script_name.py <data | dev_data>")
+
+    ast_to_id, asts = parse_ast_data(AST_DATA_FILE % DATA_DIR)
     ids = np.random.permutation(len(ast_to_id))
     train_frac, eval_frac = int(0.8*len(ast_to_id)), int(0.9*len(ast_to_id))
     train_ids = ids[:train_frac]
     eval_ids = ids[train_frac: eval_frac]
     test_ids = ids[eval_frac:]
-    create_tf_record_from_ast_ids(train_ids, TF_RECORD_TRAIN)
-    create_tf_record_from_ast_ids(eval_ids, TF_RECORD_EVAL)
-    create_tf_record_from_ast_ids(test_ids, TF_RECORD_TEST)
+    create_tf_record_from_ast_ids(MATRICES_DIR % DATA_DIR, train_ids, TF_RECORD_TRAIN % DATA_DIR)
+    create_tf_record_from_ast_ids(MATRICES_DIR % DATA_DIR, eval_ids, TF_RECORD_EVAL % DATA_DIR)
+    create_tf_record_from_ast_ids(MATRICES_DIR % DATA_DIR, test_ids, TF_RECORD_TEST % DATA_DIR)
 

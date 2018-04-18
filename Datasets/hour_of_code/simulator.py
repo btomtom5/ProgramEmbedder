@@ -6,10 +6,7 @@ import sys
 from world import World
 from game import Game, Orientation
 
-import pprint
-
-pp = pprint.PrettyPrinter(indent=4)
-
+DATA_DIR = None
 
 ################################## GENERATE THE TWO WORLD INSTANCES #############################
 
@@ -77,12 +74,12 @@ def create_large_game(ast):
 ################################## PROCESS THE THE TWO HOC DATASETS #############################
 def generate_datasets():
     # list of hoc4 json files
-    hoc4_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/data/hoc4/asts/*.json")
+    hoc4_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/%s/hoc4/asts/*.json" % DATA_DIR)
 
     total_games = 0
     total_successful = 0
 
-    hoare_path =  os.path.dirname(os.path.abspath(__file__)) + "/data/hoare_triples/"
+    hoare_path =  os.path.dirname(os.path.abspath(__file__)) + "/%s/hoare_triples/" % DATA_DIR
     dataset_count = 0
 
     ################################## PROCESS THE HOC 4 DATASET #################################
@@ -102,7 +99,7 @@ def generate_datasets():
     print("The percentage that is successful: ", total_successful / total_games)
 
     ## list of hoc18 json files
-    hoc18_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/data/hoc18/asts/*.json")
+    hoc18_paths = glob.glob(os.path.dirname(os.path.abspath(__file__)) + "/%s/hoc18/asts/*.json" % DATA_DIR)
 
     total_games = 0
     total_successful = 0
@@ -110,7 +107,7 @@ def generate_datasets():
     dataset_count = 0
 
     ################################## PROCESS THE HOC 18 DATASET #################################
-    print("length of the hoc 18 paths: %s".format(len(hoc18_paths)))
+    print("length of the hoc 18 paths: {}".format(len(hoc18_paths)))
     for program_path in hoc18_paths:
         ast = json.load(open(program_path))
         ast_name = program_path.split("/")[-1].split(".")[0]
@@ -140,11 +137,8 @@ def process_file(file_name, small_world=True):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        file_name = sys.argv[1]
+        DATA_DIR = sys.argv[1]
     else:
-        file_name = None
+        raise Exception("Usage Error: python3 script_name.py <data | dev_data>")
 
-    if file_name is None:
-        generate_datasets()
-    else:
-        process_file(file_name)
+    generate_datasets()
