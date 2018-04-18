@@ -21,7 +21,6 @@ DATA_DIR = None
 def tf_record_parser(serialized_example):
     '''
     Extracts the token sequence and program matrix features from the tfrecord.
-    Ads padding to the token sequence so that it is of length MAX_SEQUENCE_LENGTH.
     Flattens the matrix to 1-D (so that it is the same dimensions as the output of the
     multi-LSTM RNN model.
     Assumes the dimensions of the sequence stored in the matrix are seq_len x token_dim.
@@ -32,14 +31,25 @@ def tf_record_parser(serialized_example):
     keys_to_features = {
         "sequence": tf.FixedLenFeature([MAX_SEQUENCE_LENGTH, TOKEN_DIMENSIONS], tf.int64),
         "matrix": tf.FixedLenFeature([H1_UNITS**2], tf.float32),
+        "ast_id": tf.FixedLenFeature([1], tf.int64)
     }
     parsed = tf.parse_single_example(serialized_example, keys_to_features)
     seq = parsed['sequence']
     mat = parsed['matrix']
-    return seq, mat
+    ast_id = parsed['ast_id']
+    return seq, mat, ast_to_id
 
 
-def write_to_tf_record(writer, sequence, matrix):
+def write_to_tf_record(writer, sequence, matrix, id):
+    '''
+    Creates an Example Feature in the tfrecord that @writer writes to.
+    Adds padding to sequence so that it is of dimensions MAX_SEQUENCE_LENGTH x TOKEN_DIMENSIONS
+    :param writer: a tfrecord writer object that writers to a predefined file
+    :param sequence: the serialized AST expressed as 1-hot token encodings
+    :param matrix: the matrix 'leared' by running matrix_predictor.
+    :param id: the canonical id for each AST in the hoare triples
+    :return: NOTHING
+    '''
     # construct the Example proto boject
     amount_padding = MAX_SEQUENCE_LENGTH - sequence.shape[0]
     padded_sequence = np.pad(sequence, [[0, amount_padding], [0, 0]], mode='constant', constant_values=0)
@@ -51,6 +61,7 @@ def write_to_tf_record(writer, sequence, matrix):
                 # A Feature contains one of either a int64_list, float_list, or bytes_list
                 'sequence': tf.train.Feature(int64_list=tf.train.Int64List(value=padded_sequence.flatten())),
                 'matrix': tf.train.Feature(float_list=tf.train.FloatList(value=matrix.flatten())),
+                'ast_id': tf.train.Feature(int64_list=tf.train.Int64List(value=[id]))
             }))
     # use the proto object to serialize the example to a string
     serialized = example.SerializeToString()
@@ -69,7 +80,7 @@ def create_tf_record_from_ast_ids(matrices_file_path, ids, write_file_path):
             saver.restore(sess, matrix_file_path)
             var_mat = matrix.eval()
             ast_seq = ast_to_sequence(json.loads(asts[id]))  # assume output is STATEMENT_DIMENSION x MAX_SEQUENCE_LENGTH
-            write_to_tf_record(writer, ast_seq, var_mat)
+            write_to_tf_record(writer, ast_seq, var_mat, id)
     writer.close()
     sys.stdout.flush()
 
