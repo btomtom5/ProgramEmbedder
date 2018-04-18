@@ -1,5 +1,7 @@
 Datasets/hour_of_code/data/
+Datasets/hour_of_code/dev_data/
 .idea/
 __pycache__/
 venv/*
 
+slurm-*.out
