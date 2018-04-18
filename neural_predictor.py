@@ -1,8 +1,9 @@
 import tensorflow as tf
 
 from matrix_learner_tf_records import COND_FEATURE_LENGTH
-from matrix_predictor_tf_records import tf_record_parser, MAX_SEQUENCE_LENGTH
+from matrix_predictor_tf_records import MAX_SEQUENCE_LENGTH
 from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
+from neural_predictor_tf_records import tf_record_parser, TF_RECORDS_TRAIN, TF_RECORDS_EVAL, TF_RECORDS_TEST
 
 
 NUM_EPOCHS = 100
@@ -10,18 +11,19 @@ BATCH_SIZE = 32
 LSTM_CELLS = [200, 100, 50]
 PREDICTED_NN_LAYERS = [COND_FEATURE_LENGTH, 100, 50, 25, COND_FEATURE_LENGTH]
 
-data_iter_train = tf.data.TFRecordDataset(HOARE_TRIPLES_TRAIN)\
+
+data_iter_train = tf.data.TFRecordDataset(TF_RECORDS_TRAIN)\
             .map(tf_record_parser)\
             .batch(BATCH_SIZE)\
             .make_initializable_iterator()
 Ast_Seqs_train, Ps_train, Qs_train = data_iter_train.get_next()
 
-data_iter_eval = tf.data.TFRecordDataset(HOARE_TRIPLES_EVAL)\
+data_iter_eval = tf.data.TFRecordDataset(TF_RECORDS_EVAL)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
 Ast_Seqs_eval, Ps_eval, Qs_eval = data_iter_train.get_next()
 
-data_iter_test = tf.data.TFRecordDataset(HOARE_TRIPLES_TEST)\
+data_iter_test = tf.data.TFRecordDataset(TF_RECORDS_TEST)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
 Ast_Seqs_test, Ps_test, Qs_test = data_iter_train.get_next()
