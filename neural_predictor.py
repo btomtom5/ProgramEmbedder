@@ -35,16 +35,23 @@ def multi_lstm_model():
 
 
 def post_lstm_fc_layer(lstm_output):
-    weights = tf.Variable(tf.random_normal([LSTM_CELLS[-1], COND_FEATURE_LENGTH]), name='post_lstm_weights')
-    biases = tf.Variable(tf.random_normal([LSTM_CELLS[-1]]), name='post_lstm_biases')
-    return tf.nn.relu_layer(lstm_output, weights, biases, name='post_lstm_layer')
+    num_weights_in_pred_NN = 0
+    for i in range(1, len(PREDICTED_NN_LAYERS)):
+        num_layer_weights = PREDICTED_NN_LAYERS[i-1]*PREDICTED_NN_LAYERS[i]
+        num_layer_biases = PREDICTED_NN_LAYERS[i]
+        num_weights_in_pred_NN += num_layer_weights + num_layer_biases
+    weights = tf.Variable(tf.random_normal([LSTM_CELLS[-1], num_weights_in_pred_NN]), name='post_lstm_weights')
+    biases = tf.Variable(tf.random_normal([num_weights_in_pred_NN]), name='post_lstm_biases')
+    output = tf.nn.relu(tf.add(tf.matmul(lstm_output, weights), biases))
+    return output
 
 
 def reshape_concatenated_weights_to_layers(concatenated_weights, preconds):
     '''
     Takes in a hidden state (output from an LSTM model).
-    Reshapes the hidden_state into a neural network with 3 hidden layers
-    of size 3x, 2x, 1x.
+    Reshapes the hidden_state into a neural network with layers described
+    by PREDICTED_NN_LAYERS. The first layer is the input size and the last layer
+    is the output size. The middle layers are hidden layers.
     Hidden layers use ReLU.
     Assumes that PREDICTED_NN_LAYERS has at least 2 layer sizes
 
@@ -53,29 +60,30 @@ def reshape_concatenated_weights_to_layers(concatenated_weights, preconds):
     :return: the outputs of the feed-forward network (sigmoid)
     '''
     start = 0
-    layer = preconds
-    for i in range(1, len(PREDICTED_NN_LAYERS) - 1):
-        end = PREDICTED_NN_LAYERS[i-1]*PREDICTED_NN_LAYERS[i]
+    end = 0
+    layer = tf.cast(preconds, dtype=tf.float32)
+    for i in range(1, len(PREDICTED_NN_LAYERS)):
+        end += PREDICTED_NN_LAYERS[i-1]*PREDICTED_NN_LAYERS[i]
         weights = tf.reshape(
-            tf.gather(concatenated_weights, list(range(start, end)), axis=0),
+            tf.gather(concatenated_weights, list(range(start, end)), axis=1),
             [PREDICTED_NN_LAYERS[i-1], PREDICTED_NN_LAYERS[i]]
         )
         start = end
-        end = start + PREDICTED_NN_LAYERS[0]
-        biases = tf.gather(concatenated_weights, list(range(start, end)), axis=0)
-        layer = tf.nn.relu_layer(layer, weights, biases)
+        end += PREDICTED_NN_LAYERS[i]
+        biases = tf.gather(concatenated_weights, list(range(start, end)), axis=1)
+        layer = tf.nn.relu(tf.add(tf.matmul(layer, weights), biases))
     return tf.nn.sigmoid(layer)
 
 
 # Define the model (in sequential order pretty much)
-Ast_Seqs = tf.placeholder(tf.int32, [BATCH_SIZE, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
+Ast_Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
 lstm_model = multi_lstm_model()
 all_outputs, _ = tf.nn.dynamic_rnn(lstm_model, Ast_Seqs, dtype=tf.float32)
 final_output = tf.unstack(tf.gather(all_outputs, [MAX_SEQUENCE_LENGTH - 1], axis=1), axis=1)[0]
 nn_as_vec = post_lstm_fc_layer(final_output)
-Ps = tf.placeholder(tf.int32, [BATCH_SIZE, COND_FEATURE_LENGTH])
+Ps = tf.placeholder(tf.int32, [None, COND_FEATURE_LENGTH])
 Qs_pred = reshape_concatenated_weights_to_layers(nn_as_vec, Ps)
-Qs = tf.placeholder(tf.int32, [BATCH_SIZE, COND_FEATURE_LENGTH])
+Qs = tf.placeholder(tf.int32, [None, COND_FEATURE_LENGTH])
 
 # TODO: define what accuracy means for Q_pred/Q
 loss = tf.losses.mean_squared_error(Qs, Qs_pred)
