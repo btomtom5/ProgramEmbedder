@@ -1,4 +1,5 @@
 import tensorflow as tf
+import sys
 
 from matrix_learner_tf_records import COND_FEATURE_LENGTH
 from matrix_predictor_tf_records import MAX_SEQUENCE_LENGTH
@@ -10,20 +11,35 @@ NUM_EPOCHS = 5
 BATCH_SIZE = 8
 LSTM_CELLS = [200, 100, 50]
 PREDICTED_NN_LAYERS = [COND_FEATURE_LENGTH, 100, 50, 25, COND_FEATURE_LENGTH]
+DATA_DIR = "dev_data"
 
+training_loss_log = []
+NEURAL_PREDICTOR_TRAIN_LOGS = "Datasets/hour_of_code/results/neural_predictor_train_log.txt"
+evaluation_loss_log = []
+NEURAL_PREDICTOR_EVAL_LOGS = "Datasets/hour_of_code/results/neural_predictor_eval_log.txt"
+test_loss_log = []
+NEURAL_PREDICTOR_TEST_LOGS = "Datasets/hour_of_code/results/neural_predictor_test_log.txt"
 
-data_iter_train = tf.data.TFRecordDataset(TF_RECORDS_TRAIN)\
+if __name__ == "__main__":
+    if len(sys.argv) > 2:
+        DATA_DIR = sys.argv[1]
+        NUM_EPOCHS = int(sys.argv[2])
+        BATCH_SIZE = int(sys.argv[3])
+    else:
+        raise Exception("Usage Error: python3 script_name.py <data | dev_data>")
+
+data_iter_train = tf.data.TFRecordDataset(TF_RECORDS_TRAIN % DATA_DIR)\
             .map(tf_record_parser)\
             .batch(BATCH_SIZE)\
             .make_initializable_iterator()
 Ast_Seqs_train, Ps_train, Qs_train = data_iter_train.get_next()
 
-data_iter_eval = tf.data.TFRecordDataset(TF_RECORDS_EVAL)\
+data_iter_eval = tf.data.TFRecordDataset(TF_RECORDS_EVAL % DATA_DIR)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
 Ast_Seqs_eval, Ps_eval, Qs_eval = data_iter_eval.get_next()
 
-data_iter_test = tf.data.TFRecordDataset(TF_RECORDS_TEST)\
+data_iter_test = tf.data.TFRecordDataset(TF_RECORDS_TEST % DATA_DIR)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
 Ast_Seqs_test, Ps_test, Qs_test = data_iter_test.get_next()
@@ -124,6 +140,7 @@ with tf.Session() as sess:
                     Ps: sess.run(Ps_train),
                     Qs: sess.run(Qs_train),
                 })
+                training_loss_log.append((epoch, train_loss_val))
                 print('Epoch {}: Minibatch Loss: {}'.format(epoch, train_loss_val))
             except tf.errors.OutOfRangeError:
                 break
@@ -139,8 +156,10 @@ with tf.Session() as sess:
             labels: sess.run(Qs_eval),
             predictions: sess.run(tf.unstack(eval_preds, axis=0)[0])
         })
-        print('Epoch %i:\tEvaluation Loss: %f\tTest Accuracy: %f ####################################################' % (
-        epoch, eval_loss_val, sess.run(accuracy)))
+        evaluated_accuracy = sess.run(accuracy)
+        evaluation_loss_log.append((epoch, eval_loss_val, evaluated_accuracy))
+        print('Epoch %i:\tEvaluation Loss: %f\tTest Accuracy: %f ####################################################' %
+              (epoch, eval_loss_val, evaluated_accuracy))
     sess.run(data_iter_test.initializer)
     test_loss_val, test_preds = sess.run([loss, Qs_pred], feed_dict={
         # test set does not have batches, but placeholder requires batch size
@@ -153,5 +172,19 @@ with tf.Session() as sess:
         labels: sess.run(Qs_test),
         predictions: sess.run(tf.unstack(test_preds, axis=0)[0])
     })
-    print('Test Loss: %f\tTest Accuracy: %f ####################################################' % (
-        test_loss_val, sess.run(accuracy)))
+    evaluated_accuracy = sess.run(accuracy)
+    test_loss_log.append((test_loss_log, evaluated_accuracy))
+    print('Test Loss: %f\tTest Accuracy: %f ####################################################' %
+          (test_loss_val, evaluated_accuracy))
+
+with open(NEURAL_PREDICTOR_TRAIN_LOGS, 'w') as file:
+    for record in training_loss_log:
+        file.write(str(record) + "\n")
+
+with open(NEURAL_PREDICTOR_EVAL_LOGS, 'w') as file:
+    for record in evaluation_loss_log:
+        file.write(str(record) + "\n")
+
+with open(NEURAL_PREDICTOR_TEST_LOGS, 'w') as file:
+    for record in test_loss_log:
+        file.write(str(record) + "\n")

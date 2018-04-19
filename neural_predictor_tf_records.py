@@ -8,10 +8,11 @@ from ast_tokenizer import vectorize_token_list as ast_to_sequence, NUM_TOKENS as
 from matrix_learner_tf_records import PRECONDITION, POSTCONDITION, AST, COND_FEATURE_LENGTH
 from matrix_predictor_tf_records import MAX_SEQUENCE_LENGTH
 
-HOARE_TRIPLES_DIR = "Datasets/hour_of_code/data/hoare_triples"
-TF_RECORDS_TRAIN = "Datasets/hour_of_code/data/hoare_triples_tf_records/train.tfrecord"
-TF_RECORDS_EVAL = "Datasets/hour_of_code/data/hoare_triples_tf_records/eval.tfrecord"
-TF_RECORDS_TEST = "Datasets/hour_of_code/data/hoare_triples_tf_records/test.tfrecord"
+HOARE_TRIPLES_DIR = "Datasets/hour_of_code/%s/hoare_triples"
+TF_RECORDS_TRAIN = "Datasets/hour_of_code/%s/hoare_triples_tf_records/train.tfrecord"
+TF_RECORDS_EVAL = "Datasets/hour_of_code/%s/hoare_triples_tf_records/eval.tfrecord"
+TF_RECORDS_TEST = "Datasets/hour_of_code/%s/hoare_triples_tf_records/test.tfrecord"
+DATA_DIR = "dev_data"
 
 
 def tf_record_parser(serialized_example):
@@ -58,8 +59,13 @@ def create_tf_record_from_hoare_record_paths(hoare_triples_paths, tf_record_path
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        DATA_DIR = sys.argv[1]
+    else:
+        raise Exception("Usage Error: python3 script_name.py <data | dev_data>")
+
     hoare_triples = []
-    for root, dirs, files in os.walk(HOARE_TRIPLES_DIR):
+    for root, dirs, files in os.walk(HOARE_TRIPLES_DIR % DATA_DIR):
         for file in files:
             if file.endswith(".json"):
                 print("Json file: {}".format(file))
@@ -70,6 +76,6 @@ if __name__ == "__main__":
     train_triples = hoare_triples[:train_frac]
     eval_triples = hoare_triples[train_frac: eval_frac]
     test_triples = hoare_triples[eval_frac:]
-    create_tf_record_from_hoare_record_paths(train_triples, TF_RECORDS_TRAIN)
-    create_tf_record_from_hoare_record_paths(eval_triples, TF_RECORDS_EVAL)
-    create_tf_record_from_hoare_record_paths(test_triples, TF_RECORDS_TEST)
+    create_tf_record_from_hoare_record_paths(train_triples, TF_RECORDS_TRAIN % DATA_DIR)
+    create_tf_record_from_hoare_record_paths(eval_triples, TF_RECORDS_EVAL % DATA_DIR)
+    create_tf_record_from_hoare_record_paths(test_triples, TF_RECORDS_TEST % DATA_DIR)

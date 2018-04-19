@@ -95,11 +95,10 @@ with tf.Session() as sess:
         epoch, eval_loss_val[0]))
     sess.run(data_iter_test.initializer)
 
-    test_loss_val = sess.run([loss, accuracy], feed_dict={
+    test_loss_val = sess.run([loss], feed_dict={
         # test set does not have batches, but placeholder requires batch size
         Seqs: sess.run(tf.expand_dims(sequences_test, axis=0)),
         Mats: sess.run(tf.expand_dims(matrices_test, axis=0)),
-        AstIds: sess.run(ast_ids_test),
     })
     test_loss_log.append(test_loss_val[0])
     #
