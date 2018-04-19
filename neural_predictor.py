@@ -6,8 +6,8 @@ from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 from neural_predictor_tf_records import tf_record_parser, TF_RECORDS_TRAIN, TF_RECORDS_EVAL, TF_RECORDS_TEST
 
 
-NUM_EPOCHS = 50
-BATCH_SIZE = 4
+NUM_EPOCHS = 5
+BATCH_SIZE = 8
 LSTM_CELLS = [200, 100, 50]
 PREDICTED_NN_LAYERS = [COND_FEATURE_LENGTH, 100, 50, 25, COND_FEATURE_LENGTH]
 
@@ -83,22 +83,36 @@ def reshape_concatenated_weights_to_layers(concatenated_weights, preconds):
     return layer
 
 
+def binary_threshold(x):
+    cond = tf.less(x, tf.ones(tf.shape(x))*0.5)
+    thresholded_x = tf.where(cond, tf.zeros(tf.shape(x)), tf.ones(tf.shape(x)))
+    return thresholded_x
+
+
 # Define the model (in sequential order pretty much)
-Ast_Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
+Ast_Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION], name="Ast_Seqs")
 lstm_model = multi_lstm_model()
 all_outputs, _ = tf.nn.dynamic_rnn(lstm_model, Ast_Seqs, dtype=tf.float32)
 final_output = tf.unstack(tf.gather(all_outputs, [MAX_SEQUENCE_LENGTH - 1], axis=1), axis=1)[0]
 nn_as_vec = post_lstm_fc_layer(final_output)
-Ps = tf.placeholder(tf.float32, [None, COND_FEATURE_LENGTH])
+Ps = tf.placeholder(tf.float32, [None, COND_FEATURE_LENGTH], name="Ps")
 Qs_pred = reshape_concatenated_weights_to_layers(nn_as_vec, Ps)
-Qs = tf.placeholder(tf.float32, [None, COND_FEATURE_LENGTH])
+Qs = tf.placeholder(tf.float32, [None, COND_FEATURE_LENGTH], name="Qs")
 
-# TODO: define what accuracy means for Q_pred/Q
 loss = tf.losses.mean_squared_error(Qs, Qs_pred)
 optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
 
+labels = tf.placeholder(tf.float32, [COND_FEATURE_LENGTH], name="labels")
+predictions = tf.placeholder(tf.float32, [COND_FEATURE_LENGTH], name="predictions")
+accuracy, accuracy_op = tf.metrics.accuracy(
+    labels=binary_threshold(labels),
+    predictions=binary_threshold(predictions),
+    name="Q_pred_accuracy"
+)
+accuracy_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="Q_pred_accuracy")
+
 init = tf.global_variables_initializer()
-saver = tf.train.Saver()
+local_vars_init = tf.variables_initializer(var_list=accuracy_vars)
 with tf.Session() as sess:
     sess.run(init)
     for epoch in range(NUM_EPOCHS):
@@ -113,22 +127,29 @@ with tf.Session() as sess:
                 print('Epoch {}: Minibatch Loss: {}'.format(epoch, train_loss_val))
             except tf.errors.OutOfRangeError:
                 break
-            except tf.errors.InvalidArgumentError:
-                break  # typically happens when there isn't enough data for a given AST
         sess.run(data_iter_eval.initializer)
-        eval_loss_val = sess.run([loss], feed_dict={
-            # evaluation set does not have batches, but placeholder requires batch size tf.expand_dims(sequences_eval, axis=0)
+        eval_loss_val, eval_preds = sess.run([loss, Qs_pred], feed_dict={
+            # evaluation set does not have batches, but placeholder requires batch size
             Ast_Seqs: sess.run(tf.expand_dims(Ast_Seqs_eval, axis=0)),
             Ps: sess.run(tf.expand_dims(Ps_eval, axis=0)),
             Qs: sess.run(tf.expand_dims(Qs_eval, axis=0)),
         })
-        print('Epoch %i: Evaluation Loss: %f ####################################################' % (
-        epoch, eval_loss_val[0]))
+        sess.run([local_vars_init, accuracy_op], feed_dict={
+            labels: sess.run(Qs_eval),
+            predictions: sess.run(tf.unstack(eval_preds, axis=0)[0])
+        })
+        print('Epoch %i:\tEvaluation Loss: %f\tTest Accuracy: %f ####################################################' % (
+        epoch, eval_loss_val, sess.run(accuracy)))
     sess.run(data_iter_test.initializer)
-    test_loss_val = sess.run([loss], feed_dict={
+    test_loss_val, test_preds = sess.run([loss, Qs_pred], feed_dict={
         # test set does not have batches, but placeholder requires batch size
         Ast_Seqs: sess.run(tf.expand_dims(Ast_Seqs_test, axis=0)),
         Ps: sess.run(tf.expand_dims(Ps_test, axis=0)),
         Qs: sess.run(tf.expand_dims(Qs_test, axis=0)),
     })
-    print('Test Loss: %f ####################################################' % test_loss_val[0])
+    sess.run([local_vars_init, accuracy_op], feed_dict={
+        labels: sess.run(Qs_test),
+        predictions: sess.run(tf.unstack(test_preds, axis=0)[0])
+    })
+    print('Test Loss: %f\tTest Accuracy: %f ####################################################' % (
+        test_loss_val, sess.run(accuracy)))
