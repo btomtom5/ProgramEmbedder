@@ -5,6 +5,7 @@ from matrix_predictor_tf_records import TF_RECORD_TRAIN, TF_RECORD_EVAL, TF_RECO
 from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<< TODO: CHANGE EPOCHS + BATCH SIZE BACK TO AN APPROPRIATE AMOUNT >>>>>>>>>>>>>>
+
 DATA_DIR = None
 BATCH_SIZE = None
 
@@ -33,18 +34,18 @@ data_iter_train = tf.data.TFRecordDataset(TF_RECORD_TRAIN % DATA_DIR)\
             .map(tf_record_parser)\
             .batch(BATCH_SIZE)\
             .make_initializable_iterator()
-sequences_train, matrices_train = data_iter_train.get_next()
+sequences_train, matrices_train, ast_id_train = data_iter_train.get_next()
 
 data_iter_eval = tf.data.TFRecordDataset(TF_RECORD_EVAL % DATA_DIR)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
 
-sequences_eval, matrices_eval = data_iter_eval.get_next()
+sequences_eval, matrices_eval, ast_id_eval = data_iter_eval.get_next()
 
 data_iter_test = tf.data.TFRecordDataset(TF_RECORD_TEST % DATA_DIR)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
-sequences_test, matrices_test = data_iter_test.get_next()
+sequences_test, matrices_test, ast_id_test = data_iter_test.get_next()
 
 
 def multi_lstm_model():
