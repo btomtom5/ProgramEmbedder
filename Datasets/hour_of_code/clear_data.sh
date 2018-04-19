@@ -34,9 +34,11 @@ rm -r $DIR_PATH/intermediate
 rm -r $DIR_PATH/tfrecords
 rm -r $DIR_PATH/ast_matrices
 rm $DIR_PATH/ast_to_id.txt
+rm -r $DIR_PATH/hoare_triples_tf_records
 
 # create the data directories
 
 mkdir $DIR_PATH/intermediate
 mkdir $DIR_PATH/tfrecords
 mkdir $DIR_PATH/ast_matrices
+mkdir $DIR_PATH/hoare_triples_tf_records
