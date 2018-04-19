@@ -134,7 +134,8 @@ with tf.Session() as sess:
             Ps: sess.run(tf.expand_dims(Ps_eval, axis=0)),
             Qs: sess.run(tf.expand_dims(Qs_eval, axis=0)),
         })
-        sess.run([local_vars_init, accuracy_op], feed_dict={
+        sess.run(local_vars_init)
+        sess.run([accuracy_op], feed_dict={
             labels: sess.run(Qs_eval),
             predictions: sess.run(tf.unstack(eval_preds, axis=0)[0])
         })
@@ -147,7 +148,8 @@ with tf.Session() as sess:
         Ps: sess.run(tf.expand_dims(Ps_test, axis=0)),
         Qs: sess.run(tf.expand_dims(Qs_test, axis=0)),
     })
-    sess.run([local_vars_init, accuracy_op], feed_dict={
+    sess.run(local_vars_init)
+    sess.run([accuracy_op], feed_dict={
         labels: sess.run(Qs_test),
         predictions: sess.run(tf.unstack(test_preds, axis=0)[0])
     })

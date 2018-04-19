@@ -58,3 +58,6 @@ python3 matrix_learner.py ${data_dir} ${num_epochs} ${batch_size}
 python3 matrix_predictor_tf_records.py ${data_dir}
 
 python3 matrix_predictor.py ${data_dir} ${num_epochs} ${batch_size}
+
+python3 neural_predictor_tf_records.py
+python3 neural_predictor.py

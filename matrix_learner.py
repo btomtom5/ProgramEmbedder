@@ -22,6 +22,54 @@ DATA_DIR = None
 training_loss_log = []
 MATRIX_LEARNER_LOGS = "Datasets/hour_of_code/results/matrix_learner_log.txt"
 
+weights = {
+    'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS]), name="encoder_h1"),
+    'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS]), name='linear_map'),
+    'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS]), name='decoder_h1'),
+}
+
+biases = {
+    'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS]), name='encoder_b1'),
+    'decoder_b1': tf.Variable(tf.random_normal([INPUT_UNITS]), name='decoder_b1'),
+}
+
+
+def encoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
+    return layer_1
+
+
+def decoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
+    return layer_1
+
+
+def linear_map(x):
+    transform = tf.matmul(x, weights['linear_map'])
+    return transform
+
+
+# Construct model
+P = tf.placeholder(tf.float32, [None, INPUT_UNITS])
+Q = tf.placeholder(tf.float32, [None, INPUT_UNITS])
+
+autoencoder_op = decoder(encoder(P))
+encoder_op = encoder(P)
+linear_op = linear_map(encoder_op)
+decoder_op = decoder(linear_op)
+
+P_true, P_pred = P, autoencoder_op
+Q_true, Q_pred = Q, decoder_op
+
+auto_loss = tf.reduce_mean(tf.pow(P_true - P_pred, 2))
+end_to_end_loss = tf.losses.sigmoid_cross_entropy(Q_true, Q_pred)
+regularizer = tf.nn.l2_loss(weights['encoder_h1']) \
+              + tf.nn.l2_loss(weights['decoder_h1']) \
+              + tf.nn.l2_loss(weights['linear_map'])
+loss = auto_loss + end_to_end_loss + REGULARIZER_COEFF * regularizer
+optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(loss)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 3:
         DATA_DIR = sys.argv[1]
@@ -40,53 +88,6 @@ if __name__ == "__main__":
             preconds, postconds = data_iter.get_next()
 
             ast_to_id, asts = parse_ast_data(AST_DATA_FILE % DATA_DIR)
-
-            weights = {
-                'encoder_h1': tf.Variable(tf.random_normal([INPUT_UNITS, H1_UNITS]), name="encoder_h1"),
-                'linear_map': tf.Variable(tf.random_normal([H1_UNITS, H1_UNITS]), name='linear_map'),
-                'decoder_h1': tf.Variable(tf.random_normal([H1_UNITS, INPUT_UNITS]), name='decoder_h1'),
-            }
-
-            biases = {
-                'encoder_b1': tf.Variable(tf.random_normal([H1_UNITS]), name='encoder_b1'),
-                'decoder_b1': tf.Variable(tf.random_normal([INPUT_UNITS]), name='decoder_b1'),
-            }
-
-
-            def encoder(x):
-                layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
-                return layer_1
-
-
-            def decoder(x):
-                layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
-                return layer_1
-
-
-            def linear_map(x):
-                transform = tf.matmul(x, weights['linear_map'])
-                return transform
-
-
-            # Construct model
-            P = tf.placeholder(tf.float32, [None, INPUT_UNITS])
-            Q = tf.placeholder(tf.float32, [None, INPUT_UNITS])
-
-            autoencoder_op = decoder(encoder(P))
-            encoder_op = encoder(P)
-            linear_op = linear_map(encoder_op)
-            decoder_op = decoder(linear_op)
-
-            P_true, P_pred = P, autoencoder_op
-            Q_true, Q_pred = Q, decoder_op
-
-            auto_loss = tf.reduce_mean(tf.pow(P_true - P_pred, 2))
-            end_to_end_loss = tf.losses.sigmoid_cross_entropy(Q_true, Q_pred)
-            regularizer = tf.nn.l2_loss(weights['encoder_h1']) \
-                          + tf.nn.l2_loss(weights['decoder_h1']) \
-                          + tf.nn.l2_loss(weights['linear_map'])
-            loss = auto_loss + end_to_end_loss + REGULARIZER_COEFF * regularizer
-            optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(loss)
 
             # Initialize the variables (i.e. assign their default value)
             init = tf.global_variables_initializer()
@@ -115,4 +116,4 @@ if __name__ == "__main__":
 
     with open(MATRIX_LEARNER_LOGS, 'w') as file:
         for record in training_loss_log:
-            file.write(str(record))
+            file.write(str(record) + "\n")

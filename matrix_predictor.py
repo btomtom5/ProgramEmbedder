@@ -3,7 +3,7 @@ import sys
 
 from matrix_predictor_tf_records import TF_RECORD_TRAIN, TF_RECORD_EVAL, TF_RECORD_TEST, tf_record_parser, H1_UNITS, MAX_SEQUENCE_LENGTH
 from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
-
+from matrix_learner import decoder_op, encoder_op
 # <<<<<<<<<<<<<<<<<<<<<<<<<< TODO: CHANGE EPOCHS + BATCH SIZE BACK TO AN APPROPRIATE AMOUNT >>>>>>>>>>>>>>
 
 DATA_DIR = None
@@ -34,18 +34,18 @@ data_iter_train = tf.data.TFRecordDataset(TF_RECORD_TRAIN % DATA_DIR)\
             .map(tf_record_parser)\
             .batch(BATCH_SIZE)\
             .make_initializable_iterator()
-sequences_train, matrices_train, ast_id_train = data_iter_train.get_next()
+sequences_train, matrices_train, ast_ids_train = data_iter_train.get_next()
 
 data_iter_eval = tf.data.TFRecordDataset(TF_RECORD_EVAL % DATA_DIR)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
 
-sequences_eval, matrices_eval, ast_id_eval = data_iter_eval.get_next()
+sequences_eval, matrices_eval, ast_ids_eval = data_iter_eval.get_next()
 
 data_iter_test = tf.data.TFRecordDataset(TF_RECORD_TEST % DATA_DIR)\
             .map(tf_record_parser)\
             .make_initializable_iterator()
-sequences_test, matrices_test, ast_id_test = data_iter_test.get_next()
+sequences_test, matrices_test, ast_ids_test = data_iter_test.get_next()
 
 
 def multi_lstm_model():
@@ -55,6 +55,7 @@ def multi_lstm_model():
 
 Seqs = tf.placeholder(tf.float32, [None, MAX_SEQUENCE_LENGTH, TOKEN_DIMENSION])
 Mats = tf.placeholder(tf.float32, [None, H1_UNITS**2])
+AstIds = tf.placeholder(tf.int64, [None, 1])
 
 lstm_model = multi_lstm_model()
 output, state = tf.nn.dynamic_rnn(lstm_model, Seqs, dtype=tf.float32)
@@ -62,6 +63,7 @@ predicted_matrices = tf.unstack(tf.gather(output, [MAX_SEQUENCE_LENGTH - 1], axi
 
 loss = tf.losses.mean_squared_error(Mats, predicted_matrices)
 optimizer = tf.train.AdamOptimizer().minimize(loss)
+accuracy = None
 
 init = tf.global_variables_initializer()
 saver = tf.train.Saver()
@@ -93,22 +95,24 @@ with tf.Session() as sess:
         epoch, eval_loss_val[0]))
     sess.run(data_iter_test.initializer)
 
-    test_loss_val = sess.run([loss], feed_dict={
+    test_loss_val = sess.run([loss, accuracy], feed_dict={
         # test set does not have batches, but placeholder requires batch size
         Seqs: sess.run(tf.expand_dims(sequences_test, axis=0)),
-        Mats: sess.run(tf.expand_dims(matrices_test, axis=0))
+        Mats: sess.run(tf.expand_dims(matrices_test, axis=0)),
+        AstIds: sess.run(ast_ids_test),
     })
     test_loss_log.append(test_loss_val[0])
+    #
     print('Test Loss: %f ####################################################' % test_loss_val[0])
 
 with open(MATRIX_PREDICTOR_TRAIN_LOGS, 'w') as file:
     for record in training_loss_log:
-        file.write(str(record))
+        file.write(str(record) + "\n")
 
 with open(MATRIX_PREDICTOR_EVAL_LOGS, 'w') as file:
     for record in evaluation_loss_log:
-        file.write(str(record))
+        file.write(str(record) + "\n")
 
 with open(MATRIX_PREDICTOR_TEST_LOGS, 'w') as file:
     for record in test_loss_log:
-        file.write(str(record))
+        file.write(str(record) + "\n")

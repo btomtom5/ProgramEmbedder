@@ -37,7 +37,7 @@ def tf_record_parser(serialized_example):
     seq = parsed['sequence']
     mat = parsed['matrix']
     ast_id = parsed['ast_id']
-    return seq, mat, ast_to_id
+    return seq, mat, ast_id
 
 
 def write_to_tf_record(writer, sequence, matrix, id):
