@@ -6,8 +6,8 @@ from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
 from neural_predictor_tf_records import tf_record_parser, TF_RECORDS_TRAIN, TF_RECORDS_EVAL, TF_RECORDS_TEST
 
 
-NUM_EPOCHS = 5
-BATCH_SIZE = 16
+NUM_EPOCHS = 50
+BATCH_SIZE = 4
 LSTM_CELLS = [200, 100, 50]
 PREDICTED_NN_LAYERS = [COND_FEATURE_LENGTH, 100, 50, 25, COND_FEATURE_LENGTH]
 
@@ -63,7 +63,7 @@ def reshape_concatenated_weights_to_layers(concatenated_weights, preconds):
     end = 0
     layer = preconds
     indeces = list(range(1, len(PREDICTED_NN_LAYERS)))
-    non_linear_transforms = [tf.nn.relu]*(len(PREDICTED_NN_LAYERS) - 2) + [tf.nn.sigmoid]
+    non_linear_transforms = [tf.nn.sigmoid]*(len(PREDICTED_NN_LAYERS) - 1) #[tf.nn.relu]*(len(PREDICTED_NN_LAYERS) - 2) + [tf.nn.sigmoid]
     for i, transform in zip(indeces, non_linear_transforms):
         end += PREDICTED_NN_LAYERS[i-1]*PREDICTED_NN_LAYERS[i]
         weights = tf.reshape(
@@ -95,7 +95,7 @@ Qs = tf.placeholder(tf.float32, [None, COND_FEATURE_LENGTH])
 
 # TODO: define what accuracy means for Q_pred/Q
 loss = tf.losses.mean_squared_error(Qs, Qs_pred)
-optimizer = tf.train.AdamOptimizer().minimize(loss)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
 
 init = tf.global_variables_initializer()
 saver = tf.train.Saver()
