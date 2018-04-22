@@ -3,16 +3,9 @@ import tensorflow as tf
 from ast_tokenizer import vectorize_token_list as ast_to_sequence, NUM_TOKENS as TOKEN_DIMENSIONS
 
 from matrix_learner import H1_UNITS
-from matrix_learner_tf_records import parse_ast_data, MATRICES_DIR, AST_DATA_FILE
+from matrix_learner.matrix_learner_tf_records import parse_ast_data, MATRICES_DIR, AST_DATA_FILE
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<< TODO: CHANGE FILES BACK TO FULL DATA SET >>>>>>>>>>>>>>
-# TF_RECORD_TRAIN = "Datasets/hour_of_code/data/tfrecords/mat_pred_train.tfrecord"
-# TF_RECORD_EVAL = "Datasets/hour_of_code/data/tfrecords/mat_pred_eval.tfrecord"
-# TF_RECORD_TEST = "Datasets/hour_of_code/data/tfrecords/mat_pred_test.tfrecord"
-
-TF_RECORD_TRAIN = "Datasets/hour_of_code/%s/tfrecords/mat_pred_train.tfrecord"
-TF_RECORD_EVAL = "Datasets/hour_of_code/%s/tfrecords/mat_pred_eval.tfrecord"
-TF_RECORD_TEST = "Datasets/hour_of_code/%s/tfrecords/mat_pred_test.tfrecord"
 
 MAX_SEQUENCE_LENGTH = 20
 DATA_DIR = None

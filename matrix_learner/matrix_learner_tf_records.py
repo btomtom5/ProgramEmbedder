@@ -10,12 +10,6 @@ POSTCONDITION = "postcond"
 AST = "ast"
 
 DATA_DIR = None
-HOARE_TRIPLES_DIR = "Datasets/hour_of_code/%s"
-INTERMEDIATE_DIR = "Datasets/hour_of_code/%s/intermediate" 
-TF_RECORDS_DIR = "Datasets/hour_of_code/%s/tfrecords" 
-MATRICES_DIR = "Datasets/hour_of_code/%s/ast_matrices" 
-AST_DATA_FILE = "Datasets/hour_of_code/%s/ast_to_id.txt" 
-
 
 def parse_ast_data(ast_data_file):
     with open(ast_data_file, 'r') as f:

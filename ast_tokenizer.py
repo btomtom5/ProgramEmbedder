@@ -1,8 +1,8 @@
 # Given an ast, return a numpy array that is seq_length x statement_dim
 # AST is a dictionary of values 
 import numpy as np
-from Datasets.hour_of_code.util import is_placeholder, is_terminal_statement
-from Datasets.hour_of_code.tokens import TOKENS_ENUM, NUM_TOKENS
+from simulator.util import is_placeholder, is_terminal_statement
+from simulator.tokens import TOKENS_ENUM, NUM_TOKENS
 
 # ast tokenizer is meant to go through the tree dfs
 # if else | while loop | for loop |

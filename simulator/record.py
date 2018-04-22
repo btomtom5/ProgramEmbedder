@@ -10,13 +10,13 @@ class Record:
         self._precond = generate_condition(*precond)
         self._postcond = generate_condition(*postcond)
 
-    def write_hoare_triple(self, filepath):
+    def get_hoare_triple(self):
         data = {}
         data["ast"] = self.ast
         data["precond"] = self._precond
         data["postcond"] = self._postcond
-        with open(filepath, 'w') as outfile:
-            json.dump(data, outfile)
+        return data
+
 
 
 def generate_condition(location, program_state, program_failure, agent_orientation, board, agent_start, agent_end):

@@ -5,13 +5,10 @@ import numpy as np
 from random import shuffle
 
 from ast_tokenizer import vectorize_token_list as ast_to_sequence, NUM_TOKENS as TOKEN_DIMENSION
-from matrix_learner_tf_records import PRECONDITION, POSTCONDITION, AST, COND_FEATURE_LENGTH
-from matrix_predictor_tf_records import MAX_SEQUENCE_LENGTH
+from matrix_learner.matrix_learner_tf_records import PRECONDITION, POSTCONDITION, AST, COND_FEATURE_LENGTH
+from matrix_predictor.matrix_predictor_tf_records import MAX_SEQUENCE_LENGTH
 
-HOARE_TRIPLES_DIR = "Datasets/hour_of_code/%s/hoare_triples"
-TF_RECORDS_TRAIN = "Datasets/hour_of_code/%s/hoare_triples_tf_records/train.tfrecord"
-TF_RECORDS_EVAL = "Datasets/hour_of_code/%s/hoare_triples_tf_records/eval.tfrecord"
-TF_RECORDS_TEST = "Datasets/hour_of_code/%s/hoare_triples_tf_records/test.tfrecord"
+
 DATA_DIR = "dev_data"
 
 

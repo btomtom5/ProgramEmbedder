@@ -1,11 +1,10 @@
 import tensorflow as tf
 import sys
 
-from matrix_learner_tf_records import COND_FEATURE_LENGTH
-from matrix_predictor_tf_records import MAX_SEQUENCE_LENGTH
+from matrix_learner.matrix_learner_tf_records import COND_FEATURE_LENGTH
+from matrix_predictor.matrix_predictor_tf_records import MAX_SEQUENCE_LENGTH
 from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
-from neural_predictor_tf_records import tf_record_parser, TF_RECORDS_TRAIN, TF_RECORDS_EVAL, TF_RECORDS_TEST
-
+from neural_predictor.neural_predictor_tf_records import tf_record_parser
 
 NUM_EPOCHS = 5
 BATCH_SIZE = 8
@@ -14,11 +13,8 @@ PREDICTED_NN_LAYERS = [COND_FEATURE_LENGTH, 100, 50, 25, COND_FEATURE_LENGTH]
 DATA_DIR = "dev_data"
 
 training_loss_log = []
-NEURAL_PREDICTOR_TRAIN_LOGS = "Datasets/hour_of_code/results/neural_predictor_train_log.txt"
 evaluation_loss_log = []
-NEURAL_PREDICTOR_EVAL_LOGS = "Datasets/hour_of_code/results/neural_predictor_eval_log.txt"
 test_loss_log = []
-NEURAL_PREDICTOR_TEST_LOGS = "Datasets/hour_of_code/results/neural_predictor_test_log.txt"
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:

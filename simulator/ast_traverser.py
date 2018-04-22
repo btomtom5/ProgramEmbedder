@@ -1,9 +1,9 @@
 import json
-from record import Record
+from simulator.record import Record
 from enum import Enum
-from util import log, is_placeholder
+from simulator.util import log, is_placeholder
 
-from game import MovingException, MaxDepthException
+from simulator.game import MovingException, MaxDepthException
 
 global_records = set()
 
@@ -100,9 +100,8 @@ class AstTraverser:
     def traverse(self):
         self._traverser_helper(self._ast)
 
-    def write_records(self, path):
-        for i, record in enumerate(self._records):
-            record.write_hoare_triple(path + "_ast" + str(i) + ".json")
+    def get_records(self):
+        return [record.get_hoare_triple() for record in self._records]
 
 
 CodeType = Enum("CodeType", "ELSE maze_moveForward maze_turn maze_ifElse maze_forever turnLeft turnRight isPathForward isPathRight isPathLeft DO")

@@ -1,9 +1,9 @@
 import tensorflow as tf
 import sys
 
-from matrix_predictor_tf_records import TF_RECORD_TRAIN, TF_RECORD_EVAL, TF_RECORD_TEST, tf_record_parser, H1_UNITS, MAX_SEQUENCE_LENGTH
+from matrix_predictor.matrix_predictor_tf_records import TF_RECORD_TRAIN, TF_RECORD_EVAL, TF_RECORD_TEST, tf_record_parser, H1_UNITS, MAX_SEQUENCE_LENGTH
 from ast_tokenizer import NUM_TOKENS as TOKEN_DIMENSION
-from matrix_learner import decoder_op, encoder_op
+
 # <<<<<<<<<<<<<<<<<<<<<<<<<< TODO: CHANGE EPOCHS + BATCH SIZE BACK TO AN APPROPRIATE AMOUNT >>>>>>>>>>>>>>
 
 DATA_DIR = None
@@ -15,11 +15,8 @@ NUM_EPOCHS = None
 
 
 training_loss_log = []
-MATRIX_PREDICTOR_TRAIN_LOGS = "Datasets/hour_of_code/results/matrix_predictor_train_log.txt"
 evaluation_loss_log = []
-MATRIX_PREDICTOR_EVAL_LOGS = "Datasets/hour_of_code/results/matrix_predictor_eval_log.txt"
 test_loss_log = []
-MATRIX_PREDICTOR_TEST_LOGS = "Datasets/hour_of_code/results/matrix_predictor_test_log.txt"
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:

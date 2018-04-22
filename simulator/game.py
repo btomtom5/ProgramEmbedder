@@ -23,7 +23,7 @@ class Orientation(Enum):
 class Game:
     def __init__(self, world, startCoords, endCoords, orientation, ast):
         # Import here to avoid circular imports
-        from ast_traverser import AstTraverser
+        from simulator.ast_traverser import AstTraverser
 
         self.world = world
         self._start_loc = startCoords
@@ -132,5 +132,5 @@ class Game:
     def extract_state(self):
         return self.curr_loc, self.successful, self.failure, self.orientation, self.world._world, self._start_loc, self.end_loc
 
-    def write_records(self, path):
-        self._ast_traverser.write_records(path)
+    def get_records(self):
+        return self._ast_traverser.get_records()

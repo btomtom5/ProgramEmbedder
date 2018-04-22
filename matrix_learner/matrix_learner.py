@@ -2,8 +2,10 @@ import os
 import sys
 
 import tensorflow as tf
-from matrix_learner_tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS,\
-    parse_ast_data, TF_RECORDS_DIR, MATRICES_DIR, AST_DATA_FILE
+from matrix_learner.matrix_learner_tf_records import cond_tf_record_parser, COND_FEATURE_LENGTH as INPUT_UNITS,\
+    parse_ast_data
+
+from data_sources import TF_RECORDS_DIR, MATRICES_DIR, AST_DATA_FILE
 
 
 AST_INDEX = "ast"
