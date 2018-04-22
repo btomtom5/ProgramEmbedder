@@ -18,7 +18,8 @@ def load_original_data(prefix="data/dev_data/"):
             continue
         else:
             try:
-                yield json.load(file_summary.get()['Body'])
+                decoded_json = file_summary.get()['Body'].read().decode('utf-8')
+                yield json.loads(decoded_json)
             except UnicodeDecodeError:
                 print("Warning skipped file: {}".format(file_summary.key))
 
