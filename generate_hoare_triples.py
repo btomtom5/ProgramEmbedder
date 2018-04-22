@@ -128,5 +128,5 @@ def generate_datasets(processor_name, program_batches, batch_size=1000):
 
 if __name__ == "__main__":
 
-    generate_datasets("hoc4", hoc4_data)
-    generate_datasets("hoc18", hoc18_data)
+    generate_datasets("hoc4", hoc4_data, batch_size=200)
+    generate_datasets("hoc18", hoc18_data, batch_size=1000)

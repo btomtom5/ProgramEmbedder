@@ -24,7 +24,6 @@ def load_original_data(prefix="data/dev_data/"):
 
 
 def write_hoare_triples(basepath, hoare_triples, batch_number):
-    print(basepath)
     dumped_data = BytesIO(json.dumps(hoare_triples).encode())
     data_store.upload_fileobj(dumped_data, basepath + str(batch_number) + ".json")
 
