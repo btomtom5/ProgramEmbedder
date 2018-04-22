@@ -90,7 +90,7 @@ class AstTraverser:
 
         postcond = list(self._game.extract_state())
 
-        if json.dumps(ast) not in global_records:
+        if json.dumps(ast) + str(precond) not in global_records:
             self._records.append(Record(precond, postcond, ast_copy))
         else:
             total_skipped += 1
