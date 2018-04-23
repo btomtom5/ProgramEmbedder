@@ -9,6 +9,8 @@ global_records = set()
 
 total_skipped = 0
 
+# TODO Create test cases for the world traverser to verify correctness
+
 
 class AstTraverser:
 

@@ -104,7 +104,7 @@ def batch_processor(processor_name, batch_size):
 
             total_games += 1
             total_successful += 1 if small_game.successful else 0
-        batch_number += 0
+        batch_number += 1
 
     write_hoare_triples(hoare_triple_path + processor_name + "/", hoare_triples, batch_number)
     yield total_games, total_successful
